@@ -22,3 +22,18 @@ window.S3 = function (is, cfs, bs) {
 window.TB = function (rows) {
   return '<table class="kv">' + rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; }).join("") + '</table>';
 };
+
+/* Chill Mode concept cards: a passive feed, separate from the question bank and its progress.
+   Each data/chill/<topic>.js calls CHILL(category, [cards]). Card fields:
+     id     stable id: "x" + topic letter + number, e.g. "xa1" (never change or reuse: seen/saved state is keyed on it)
+     t      "concept" | "intuition" | "example" | "fact" | "real" | "myth"
+     hook   the curiosity question or statement (plain text)
+     v      myth cards only: "Myth" | "Partly true" | "True"
+     body   2–4 short sentences (HTML; <b> highlights a key term)
+     exk    "numbers" | "analogy" | "scenario"
+     ex     the example (HTML: <p>, TB() table, or <div class="calc"> lines)
+     take   one-sentence takeaway (plain text)
+     more   {d: deeper explanation (HTML), f: optional formula (plain text)}
+     rel    1–3 ids of related interview questions in the main bank (for "Test me") */
+window.CB = [];
+window.CHILL = function (cat, cards) { cards.forEach(function (x) { x.c = cat; window.CB.push(x); }); };

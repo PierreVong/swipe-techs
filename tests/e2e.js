@@ -325,6 +325,173 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   });
   await ctx.close();
 
+  // ---------- Chill Mode ----------
+  console.log("Chill Mode");
+  const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
+  await ctxC.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  const pC = await ctxC.newPage(); watch(pC);
+  await pC.goto(URL);
+  await pC.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+  const chillApp = () => pC.evaluate(() => { const a = window.__swipe; return { mode: a.mode, cur: a.cur, ch: a.chill, st: { cards: a.st.cards, log: a.st.log, bookmarks: a.st.bookmarks }, slides: a.slides.map(s => ({ kind: s.kind, id: s.id })) }; });
+  const chillCur = async () => { const a = await chillApp(); return { ...a.slides[a.cur], idx: a.cur, el: pC.locator(".slide").nth(a.cur) }; };
+  const chillWait = idx => pC.waitForFunction(i => window.__swipe.cur === i, idx, { timeout: 4000 });
+  const studyBefore = JSON.stringify((await chillApp()).st);
+
+  await step("Chill tab opens straight into a concept: hook, explanation, example, takeaway; no reveal, quiz or rating", async () => {
+    assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme || "light"), "light");
+    await pC.locator('.tab[data-mode="chill"]').click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill");
+    const s = await chillCur();
+    assert.equal(s.kind, "chill");
+    for (const sel of [".hook", ".explain", ".cex", ".take"]) assert.ok(await s.el.locator(sel).isVisible(), sel + " visible");
+    assert.equal(await s.el.locator(".reveal-btn, .opt, .rates, .timer").count(), 0);
+    assert.equal(await s.el.locator(".more-body").isHidden(), true, "Learn more starts closed");
+    assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark", "Chill uses the night palette");
+    assert.match(await pC.locator("#ctxLabel").textContent(), /Chill · Mixed feed/);
+    const ov = await pC.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(ov <= 0, "horizontal overflow " + ov);
+    await shot(pC, "chill-1");
+  });
+
+  await step("a concept counts as seen after a pause, a quick flick doesn't, and study progress is untouched", async () => {
+    const first = await chillCur();
+    await pC.waitForTimeout(2300);
+    let a = await chillApp();
+    assert.ok(a.ch.seen[first.id], "first concept seen after 2 s");
+    assert.ok((await pC.evaluate(() => localStorage.getItem("swipetechs.chill.v1"))).includes(first.id));
+    await pC.keyboard.press("ArrowDown"); await chillWait(first.idx + 1);
+    const flicked = await chillCur();
+    await pC.waitForTimeout(300);
+    await pC.keyboard.press("ArrowDown"); await chillWait(first.idx + 2);
+    await pC.waitForTimeout(2300);
+    a = await chillApp();
+    assert.ok(!a.ch.seen[flicked.id], "a card flicked past isn't counted");
+    assert.equal(JSON.stringify(a.st), studyBefore, "no reviews, mastery or bookmarks from Chill");
+    assert.equal(await pC.locator("#goalNum").textContent(), "0");
+  });
+
+  await step("no concept repeats within a session, and topics and card types vary", async () => {
+    for (let i = 0; i < 10; i++) { const c = await chillCur(); await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); }
+    const a = await chillApp();
+    const ids = a.slides.filter(s => s.kind === "chill").map(s => s.id);
+    assert.equal(new Set(ids).size, ids.length, "repeat in " + ids.join(","));
+    const meta = await pC.evaluate(list => list.map(id => { const x = window.CB.find(y => y.id === id); return [x.c, x.t]; }), ids);
+    for (let i = 1; i < meta.length; i++) assert.ok(meta[i][0] !== meta[i - 1][0] || meta[i][1] !== meta[i - 1][1], "same topic and type twice in a row");
+  });
+
+  await step("Learn more opens the deeper explanation and the related interview question", async () => {
+    const s = await chillCur();
+    await s.el.locator(".more-btn").click();
+    assert.equal(await s.el.locator(".more-btn").getAttribute("aria-expanded"), "true");
+    assert.ok(await s.el.locator(".more-body").isVisible());
+    const q = await pC.evaluate(id => { const x = window.CB.find(y => y.id === id); return window.QB.find(y => y.id === x.rel[0]).q; }, s.id);
+    assert.equal((await s.el.locator(".iq p").textContent()).trim(), q);
+    await shot(pC, "chill-2-more");
+  });
+
+  let saved;
+  await step("saving a concept keeps it in Chill saves, apart from study bookmarks, across a reload", async () => {
+    const s = await chillCur(); saved = s.id;
+    await s.el.locator(".bm").click();
+    assert.equal(await s.el.locator(".bm").getAttribute("aria-pressed"), "true");
+    let a = await chillApp();
+    assert.deepEqual(a.ch.bm, [saved]);
+    assert.ok(!a.st.bookmarks.includes(saved));
+    await pC.reload();
+    await pC.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+    a = await chillApp();
+    assert.equal(a.mode, "chill", "reopens in Chill");
+    assert.deepEqual(a.ch.bm, [saved]);
+    await pC.locator("#collectionsBtn").click();
+    assert.match(await pC.locator("#collChillSub").textContent(), /^1 saved concept /);
+    await pC.locator("#collChill").click();
+    await pC.waitForFunction(() => window.__swipe.slides.length > 0 && window.__swipe.slides[0].kind === "chill");
+    a = await chillApp();
+    assert.equal(a.slides[0].id, saved);
+    assert.match(await pC.locator("#ctxLabel").textContent(), /Saved concepts/);
+    await pC.locator("#ctxBtn").click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill" && window.__swipe.slides.length > 0);
+    assert.match(await pC.locator("#ctxLabel").textContent(), /Mixed feed/);
+  });
+
+  await step("Test me answers the related interview question in study mode, then returns to Chill", async () => {
+    const s = await chillCur();
+    const rel = await pC.evaluate(id => window.CB.find(y => y.id === id).rel.filter(r => window.QB.some(q => q.id === r)), s.id);
+    await s.el.locator(".try-btn").click();
+    await pC.waitForFunction(() => window.__swipe.mode === "drill");
+    let c = await chillCur();
+    assert.equal(c.kind, "card"); assert.equal(c.id, rel[0]);
+    assert.match(await pC.locator("#ctxLabel").textContent(), new RegExp(`Test me · question 1 of ${rel.length}`));
+    assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark", "Test me stays in the night palette");
+    assert.equal(await pC.locator('.tab[data-mode="chill"]').getAttribute("aria-current"), "page");
+    const style = await pC.evaluate(() => { const a = window.__swipe; return a.slides[a.cur].style; });
+    const q = await pC.evaluate(id => window.QB.find(y => y.id === id), c.id);
+    if (style === "mc") await c.el.locator(`.opt[data-i="${q.a}"]`).click();
+    else if (style === "open") await c.el.locator(".q").click();
+    else await c.el.locator(".reveal-btn").click();
+    await c.el.locator(".rates").waitFor();
+    await c.el.locator('.rate[data-r="2"]').click();
+    await chillWait(c.idx + 1);
+    const a = await chillApp();
+    assert.ok(a.st.cards[rel[0]], "the real answer counts as study");
+    await pC.locator("#ctxBtn").click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill");
+    assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark");
+  });
+
+  await step("Topics narrows the Chill feed and can go back to the mixed feed", async () => {
+    await pC.locator("#ctxBtn").click();
+    await pC.locator("#chillSheet").waitFor();
+    await pC.locator("#chillChips .chip", { hasText: "LBO" }).click();
+    assert.match(await pC.locator("#chillCount").textContent(), /^\d+ concepts · \d+ not seen yet$/);
+    await pC.locator("#chillStart").click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill" && window.__swipe.slides.length > 0);
+    for (let i = 0; i < 4; i++) { const c = await chillCur(); await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); }
+    let a = await chillApp();
+    const cats = await pC.evaluate(ids => ids.map(id => window.CB.find(y => y.id === id).c), a.slides.filter(s => s.kind === "chill").map(s => s.id));
+    assert.ok(cats.length >= 4 && cats.every(c => c === "lbo"), cats.join(","));
+    assert.deepEqual(a.ch.cats, ["lbo"]);
+    assert.match(await pC.locator("#ctxLabel").textContent(), /Chill · LBO/);
+    await pC.locator("#ctxBtn").click();
+    await pC.locator("#chillChips .chip", { hasText: "Mixed feed" }).click();
+    await pC.locator("#chillStart").click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill");
+    a = await chillApp();
+    assert.deepEqual(a.ch.cats, []);
+  });
+
+  await step("moving between Chill and the other modes keeps both working; Progress shows Chill apart from mastery", async () => {
+    await pC.locator('.tab[data-mode="foryou"]').click();
+    await pC.waitForFunction(() => window.__swipe.mode === "foryou");
+    assert.equal((await chillCur()).kind, "card");
+    assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme || "light"), "light", "theme restored");
+    await pC.locator('.tab[data-mode="topic"]').click(); await pC.keyboard.press("Escape");
+    await pC.locator('.tab[data-mode="chill"]').click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill");
+    assert.equal((await chillCur()).kind, "chill");
+    await pC.locator('.tab[data-mode="progress"]').click();
+    const row = await pC.locator("#dash .crow").textContent();
+    const a = await chillApp();
+    const total = await pC.evaluate(() => window.CB.length);
+    assert.match(row, new RegExp(`${Object.keys(a.ch.seen).length} of ${total} concepts seen`));
+    assert.match(row, /1 saved · separate from mastery/);
+    await pC.keyboard.press("Escape");
+  });
+
+  await step("most Chill cards fit on one phone screen without scrolling inside the card", async () => {
+    const r = await pC.evaluate(() => {
+      const feed = document.querySelector(".feed"); let fit = 0;
+      for (const x of window.CB) {
+        const el = window.__swipe.renderChill(x.id); el.classList.add("cur"); feed.appendChild(el);
+        const sc = el.querySelector(".card-scroll"); if (sc.scrollHeight <= sc.clientHeight) fit++;
+        el.remove();
+      }
+      return { fit, total: window.CB.length };
+    });
+    assert.ok(r.fit / r.total >= 0.9, `${r.fit} of ${r.total} fit`);
+  });
+  await ctxC.close();
+
   // ---------- small phone ----------
   console.log("Small phone");
   const ctxS = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, serviceWorkers: "block" });
@@ -340,6 +507,18 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     });
     assert.equal(r.ov, 0); assert.equal(r.small, 0); assert.ok(r.settings, "settings button on screen");
     await shot(pS, "small-1");
+  });
+  await step("320px wide: all six tabs and the Chill card fit", async () => {
+    await pS.locator('.tab[data-mode="chill"]').click();
+    await pS.waitForFunction(() => window.__swipe.mode === "chill");
+    const r = await pS.evaluate(() => {
+      const el = window.__swipe.slides[window.__swipe.cur].el;
+      const small = [...el.querySelectorAll(".chill-foot button")].map(b => b.getBoundingClientRect()).filter(b => b.height < 34 || b.width < 34);
+      const clipped = [...document.querySelectorAll(".tab span")].filter(s => s.scrollWidth > s.clientWidth + 1).map(s => s.textContent);
+      return { ov: document.documentElement.scrollWidth - document.documentElement.clientWidth, small: small.length, clipped, tabs: document.querySelectorAll(".tab").length };
+    });
+    assert.equal(r.tabs, 6); assert.equal(r.ov, 0); assert.equal(r.small, 0); assert.deepEqual(r.clipped, []);
+    await shot(pS, "small-2-chill");
   });
   await ctxS.close();
 
@@ -382,6 +561,23 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await p3.waitForFunction(() => window.__swipe.cur === 1);
     const w = await p3.locator(".card").first().evaluate(e => e.getBoundingClientRect().width);
     assert.ok(w <= 600, "card width capped on desktop");
+  });
+  await step("Chill on desktop: Space moves on, L opens Learn more, B saves", async () => {
+    await p3.locator('.tab[data-mode="chill"]').click();
+    await p3.waitForFunction(() => window.__swipe.mode === "chill");
+    const i0 = await p3.evaluate(() => window.__swipe.cur);
+    await p3.keyboard.press("Space"); await p3.waitForFunction(i => window.__swipe.cur === i + 1, i0);
+    const el = p3.locator(".slide").nth(i0 + 1);
+    await p3.keyboard.press("l");
+    assert.ok(await el.locator(".more-body").isVisible());
+    await p3.keyboard.press("b");
+    assert.equal(await el.locator(".bm").getAttribute("aria-pressed"), "true");
+    await shot(p3, "desktop-2-chill");
+  });
+  await step("reduced motion: Chill cards show fully without fades", async () => {
+    await p3.emulateMedia({ reducedMotion: "reduce" });
+    const op = await p3.evaluate(() => { const s = window.__swipe.slides.find((x, i) => x.kind === "chill" && i !== window.__swipe.cur); return s ? getComputedStyle(s.el.querySelector(".hook")).opacity : "1"; });
+    assert.equal(op, "1");
   });
   await ctx3.close();
 

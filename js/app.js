@@ -1,4 +1,4 @@
-/* Swipe Techs UI: feed, card flow, modes, collections, dashboard. Depends on js/srs.js and data/*.js. */
+/* Swipe Techs UI: feed, card flow, modes, collections, dashboard. Depends on js/srs.js, js/chill.js and data/*.js. */
 (function () {
   "use strict";
   const S = window.SRS;
@@ -22,6 +22,17 @@
 
   let st = S.load(storage, Date.now());
   const persist = () => S.save(storage, st);
+
+  // Chill Mode: passive concept cards with their own seen/saved store (never touches study progress).
+  const CH = window.CHILLS;
+  const CBANK = window.CB || [];
+  const chillById = Object.fromEntries(CBANK.map(x => [x.id, x]));
+  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t }]));
+  const CHILL_CATS = ["acct", "ev", "val", "dcf", "ma", "lbo", "model"].filter(c => CBANK.some(x => x.c === c));
+  const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"] };
+  const EXK = { numbers: "Quick numbers", analogy: "Think of it like this", scenario: "Picture this" };
+  let ch = CH.load(storage);
+  const persistChill = () => CH.save(storage, ch);
 
   // Stable order for new cards: Top 100 first, easier first, otherwise shuffled (same order every visit).
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
@@ -75,12 +86,16 @@
 
   // ---------- session ----------
   const feed = $("#feed");
-  let mode = ["foryou", "topic", "weak", "top100", "bookmarks"].includes(st.prefs.mode) ? st.prefs.mode : "foryou";
-  let slides = [];        // {kind:"card"|"end"|"summary", id, seq, el, state, suggest, rating, t0, ms}
+  let mode = ["foryou", "topic", "weak", "top100", "bookmarks", "chill"].includes(st.prefs.mode) ? st.prefs.mode : "foryou";
+  let slides = [];        // {kind:"card"|"chill"|"end"|"summary", id, seq, el, state, suggest, rating, t0, ms}
   let cur = 0;
   let ended = false;
   let interview = null;   // {ids, next, results:{id:{r,ms}}, saved}
   let timer = null;
+  let chillSaved = false; // Chill feed limited to saved concepts
+  let chillSession = [];  // concepts shown since the app opened, so a session doesn't repeat itself
+  let drill = null;       // {ids, next}: "Test me" from a Chill card
+  let dwell = null, curEl = null;
 
   function candidates() {
     const p = st.prefs;
@@ -92,6 +107,7 @@
 
   function nextCardId() {
     if (mode === "interview") return interview.next < interview.ids.length ? interview.ids[interview.next++] : null;
+    if (mode === "drill") return drill.next < drill.ids.length ? drill.ids[drill.next++] : null;
     const pending = new Set(slides.slice(cur).filter(s => s.kind === "card" && s.state !== "rated").map(s => s.id));
     return S.pickNext(st, candidates(), {
       pos: st.seq, now: Date.now(), order: ORDER, exclude: pending,
@@ -100,8 +116,25 @@
     });
   }
 
+  function chillIds() {
+    if (chillSaved) return ch.bm.filter(id => chillById[id]);
+    return CBANK.filter(x => !ch.cats.length || ch.cats.includes(x.c)).map(x => x.id);
+  }
+  function appendChill() {
+    const ids = chillIds();
+    // Saved concepts play through once; the main feed keeps going.
+    const id = chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now() });
+    if (!id) { appendEnd(); return false; }
+    const s = { kind: "chill", id, first: !chillSession.length };
+    chillSession.push(id);
+    s.el = renderChill(s);
+    feed.append(s.el); slides.push(s); observer.observe(s.el);
+    return true;
+  }
+
   function append() {
     if (ended) return false;
+    if (mode === "chill") return appendChill();
     const id = nextCardId();
     if (!id) { appendEnd(); return false; }
     const s = { kind: "card", id, seq: st.seq++, state: "ask", style: styleOf(byId[id]) };
@@ -122,6 +155,16 @@
   }
 
   function endHTML() {
+    if (mode === "chill") return `<article class="card panel" style="--topic: var(--accent)"><div class="card-scroll">
+      <h2 class="q">${chillSaved ? (ch.bm.length ? "That's all your saved concepts." : "No saved concepts yet.") : "Nothing in this selection."}</h2>
+      <p class="think">${chillSaved ? "Tap the bookmark on any Chill card to keep it here." : "Pick another topic or go back to the mixed feed."}</p>
+      <div class="rowbtns"><button class="primary" data-act="chill">Back to the Chill feed</button></div>
+    </div></article>`;
+    if (mode === "drill") return `<article class="card panel" style="--topic: var(--accent)"><div class="card-scroll">
+      <h2 class="q">Nice. That's the related question${drill.ids.length > 1 ? "s" : ""}.</h2>
+      <p class="think">Your answer counts toward your normal study progress.</p>
+      <div class="rowbtns"><button class="primary" data-act="chill">Back to Chill 🌙</button><button class="ghost" data-act="foryou">Keep studying</button></div>
+    </div></article>`;
     const msg = {
       weak: ["Nothing to review right now.", "Cards you rate Didn't know or Partially show up here until you nail them consistently."],
       bookmarks: ["No bookmarks yet.", "Tap the bookmark on any card to save it to this collection."],
@@ -185,6 +228,72 @@
       <div class="foot">${footAsk(s)}</div>
     </article>`;
     return el;
+  }
+
+  // ---------- Chill cards ----------
+  function renderChill(s) {
+    const x = chillById[s.id];
+    const el = document.createElement("section");
+    el.className = "slide";
+    const saved = ch.bm.includes(x.id);
+    const seenBefore = ch.seen[x.id];
+    const ty = CTYPES[x.t] || CTYPES.concept;
+    const exBlock = `<div class="cex ${x.exk}"><div class="lbl">${EXK[x.exk] || "Example"}</div><div class="prose">${x.ex}</div></div>`;
+    const verdict = x.t === "myth" ? `<span class="verdict-pill v-${x.v === "Myth" ? "no" : x.v === "True" ? "ok" : "mid"}">${esc(x.v)}</span>` : "";
+    const body = `<div class="explain prose">${x.body}</div>`;
+    // Quick-example cards lead with the numbers; everything else explains first.
+    const main = x.t === "example" ? exBlock + body : body + exBlock;
+    const rel = (x.rel || []).filter(id => byId[id]);
+    const more = `<div class="more-body" hidden>
+        <div class="prose">${x.more.d}</div>
+        ${x.more.f ? `<div class="prose"><div class="formula">${esc(x.more.f)}</div></div>` : ""}
+        ${rel.length ? `<div class="iq"><div class="lbl">Related interview question</div><p>${esc(byId[rel[0]].q)}</p></div>` : ""}
+      </div>`;
+    el.innerHTML = `<article class="card chill-card t-${x.t}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
+      <div class="card-head">
+        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+      </div>
+      <div class="card-scroll">
+        <div class="chill-body">
+          <h2 class="hook">${esc(x.hook)}</h2>
+          ${main}
+          <div class="take"><div class="lbl">Takeaway</div><p>${esc(x.take)}</p></div>
+          ${s.first ? '<p class="swipe-hint" aria-hidden="true">Swipe up for the next one</p>' : ""}
+          ${more}
+        </div>
+      </div>
+      <div class="foot chill-foot">
+        <button class="more-btn" aria-expanded="false"><span>Learn more</span>${ICON_CHEV}</button>
+        <button class="bm" aria-pressed="${saved}" aria-label="Save this concept" title="Save">${ICON_BM}</button>
+        ${rel.length ? `<button class="try-btn" title="Answer a related interview question in study mode">Test me <span aria-hidden="true">→</span></button>` : ""}
+      </div>
+    </article>`;
+    return el;
+  }
+
+  function toggleMore(s) {
+    const b = s.el.querySelector(".more-btn"), body = s.el.querySelector(".more-body");
+    const open = b.getAttribute("aria-expanded") !== "true";
+    b.setAttribute("aria-expanded", open); body.hidden = !open;
+    b.querySelector("span").textContent = open ? "Show less" : "Learn more";
+    if (open) { markChillSeen(s); const sc = s.el.querySelector(".card-scroll"); sc.scrollTo({ top: body.offsetTop - sc.offsetTop - 12, behavior: reduced() ? "auto" : "smooth" }); }
+  }
+  function toggleChillBm(s) {
+    const on = CH.toggleBm(ch, s.id); persistChill();
+    slides.filter(x => x.id === s.id && x.kind === "chill").forEach(x => x.el.querySelector(".bm").setAttribute("aria-pressed", on));
+    announce(on ? "Saved" : "Removed from saved");
+  }
+  function markChillSeen(s) {
+    if (s.counted) return;
+    s.counted = true; CH.markSeen(ch, s.id, Date.now()); persistChill();
+  }
+  // "Test me": answer the related interview question(s) as normal study cards, then come back.
+  function startDrill(s) {
+    const ids = (chillById[s.id].rel || []).filter(id => byId[id]);
+    if (!ids.length) return;
+    markChillSeen(s);
+    mode = "drill"; interview = null; drill = { ids, next: 0, from: s.id };
+    rebuild();
   }
 
   function timerBtn() {
@@ -361,8 +470,15 @@
   feed.addEventListener("click", e => {
     const act = e.target.closest("[data-act]");
     if (act) return panelAction(act.dataset.act);
-    const s = slideOf(e.target); if (!s || s.kind !== "card") return;
+    const s = slideOf(e.target); if (!s) return;
     const t = e.target;
+    if (s.kind === "chill") {
+      if (t.closest(".bm")) return toggleChillBm(s);
+      if (t.closest(".more-btn")) return toggleMore(s);
+      if (t.closest(".try-btn")) return startDrill(s);
+      return;
+    }
+    if (s.kind !== "card") return;
     if (t.closest(".bm")) return toggleBookmark(s);
     const opt = t.closest(".opt"); if (opt) return pick(s, +opt.dataset.i);
     if (t.closest(".reveal-btn")) return reveal(s);
@@ -393,6 +509,11 @@
     const s = slides[i];
     if (!s) return;
     s.seen = true;
+    if (curEl && curEl !== s.el) curEl.classList.remove("cur");
+    s.el.classList.add("cur"); curEl = s.el;
+    clearTimeout(dwell);
+    // A concept counts as seen once it has been on screen for a couple of seconds (fast flicks don't count).
+    if (s.kind === "chill") dwell = setTimeout(() => { if (slides[cur] === s) markChillSeen(s); }, 2000);
     if (s.kind === "card" && mode === "interview" && !s.t0) s.t0 = Date.now();
     if (s.kind === "summary") renderSummary(s);
     ensureAhead();
@@ -423,8 +544,12 @@
   function rebuild() {
     clearInterval(timer);
     observer.disconnect();
+    clearTimeout(dwell);
     feed.innerHTML = ""; slides = []; cur = 0; ended = false;
-    if (mode !== "interview") { st.prefs.mode = mode; persist(); }
+    if (mode !== "interview" && mode !== "drill") { st.prefs.mode = mode; persist(); }
+    if (mode !== "chill") chillSaved = false;
+    if (mode !== "drill") drill = null;
+    applyTheme();
     ensureAhead();
     feed.scrollTop = 0;
     if (slides[0]) setCur(0);
@@ -435,6 +560,7 @@
     if (m === "progress") return openSheet("progSheet");
     if (m === "topic") return openSheet("topicSheet");
     if (m === "interview") return startInterview();
+    if (m === "chill") chillSaved = false;
     mode = m; interview = null; rebuild();
   }
 
@@ -483,6 +609,7 @@
 
   function panelAction(a) {
     if (a === "foryou") return setMode("foryou");
+    if (a === "chill") return setMode("chill");
     if (a === "topic") return openSheet("topicSheet");
     if (a === "interview") return startInterview();
     if (a === "bm-misses") {
@@ -510,7 +637,7 @@
   }
 
   function updateTabs() {
-    const m = mode === "top100" || mode === "bookmarks" ? null : mode;
+    const m = mode === "top100" || mode === "bookmarks" ? null : mode === "drill" ? "chill" : mode;   // Test me is part of Chill
     document.querySelectorAll(".tab").forEach(t => { if (t.dataset.mode === m) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
   }
 
@@ -534,11 +661,23 @@
       text = `Top 100 · ${m} mastered`;
     } else if (mode === "bookmarks") {
       text = `Bookmarks · ${st.bookmarks.length} saved`;
+    } else if (mode === "chill") {
+      const sel = chillSaved ? "Saved concepts" : ch.cats.length ? ch.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "Mixed feed";
+      text = `🌙 Chill · ${sel}`; b = chillSaved ? "Exit" : "Topics";
+    } else if (mode === "drill") {
+      const s = slides[cur];
+      const n = s && s.kind === "card" ? drill.ids.indexOf(s.id) + 1 : drill.ids.length;
+      text = `Test me · question ${n} of ${drill.ids.length}`; b = "Back to Chill";
     }
     ctx.hidden = !text;
     label.textContent = text; btn.textContent = b;
   }
-  $("#ctxBtn").addEventListener("click", () => { if (mode === "topic") openSheet("topicSheet"); else setMode("foryou"); });
+  $("#ctxBtn").addEventListener("click", () => {
+    if (mode === "topic") openSheet("topicSheet");
+    else if (mode === "chill" && !chillSaved) openSheet("chillSheet");
+    else if (mode === "chill" || mode === "drill") setMode("chill");
+    else setMode("foryou");
+  });
 
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setMode(t.dataset.mode)));
   $("#goalBtn").addEventListener("click", () => openSheet("progSheet"));
@@ -558,6 +697,7 @@
     if (id === "collSheet") drawColl();
     if (id === "progSheet") drawDash();
     if (id === "setSheet") drawSettings();
+    if (id === "chillSheet") { chillDraft = ch.cats.slice(); drawChillTopics(); }
     const el = document.getElementById(id);
     el.hidden = false; shade.hidden = false; openId = id;
     el.scrollTop = 0;
@@ -616,9 +756,32 @@
     const topS = BANK.filter(q => q.top && S.isSeen(S.get(st, q.id))).length;
     $("#collTopSub").textContent = `The most-asked IB technicals · ${topS} studied, ${topM} mastered`;
     $("#collBmSub").textContent = st.bookmarks.length ? `${st.bookmarks.length} saved card${st.bookmarks.length > 1 ? "s" : ""}` : "Tap the bookmark on any card to save it";
+    const n = ch.bm.filter(id => chillById[id]).length;
+    $("#collChillSub").textContent = n ? `${n} saved concept${n > 1 ? "s" : ""} to scroll back through` : "Save a Chill card to find it here";
   }
   $("#collTop").addEventListener("click", () => { closeSheet(); mode = "top100"; interview = null; rebuild(); });
   $("#collBm").addEventListener("click", () => { closeSheet(); mode = "bookmarks"; interview = null; rebuild(); });
+  $("#collChill").addEventListener("click", () => { closeSheet(); mode = "chill"; chillSaved = true; interview = null; rebuild(); });
+
+  // Chill topic picker: Mixed feed (default) or chosen topics.
+  let chillDraft = [];
+  function drawChillTopics() {
+    const cc = $("#chillChips"); cc.innerHTML = "";
+    cc.append(chip("Mixed feed", !chillDraft.length, () => { chillDraft = []; drawChillTopics(); }));
+    CHILL_CATS.forEach(k => cc.append(chip(CATS[k].name, chillDraft.includes(k), () => {
+      chillDraft = chillDraft.includes(k) ? chillDraft.filter(x => x !== k) : [...chillDraft, k];
+      if (chillDraft.length === CHILL_CATS.length) chillDraft = [];
+      drawChillTopics();
+    }, `--t-${k}`)));
+    const pool = CBANK.filter(x => !chillDraft.length || chillDraft.includes(x.c));
+    const fresh = pool.filter(x => !ch.seen[x.id]).length;
+    $("#chillSel").textContent = chillDraft.length ? chillDraft.map(c => CATS[c].short || CATS[c].name).join(", ") : "Mixed feed · every topic";
+    $("#chillCount").textContent = `${pool.length} concepts · ${fresh} not seen yet`;
+  }
+  $("#chillStart").addEventListener("click", () => {
+    ch.cats = chillDraft.slice(); persistChill();
+    closeSheet(); mode = "chill"; chillSaved = false; interview = null; rebuild();
+  });
 
   // ---------- settings ----------
   function drawSettings() {
@@ -628,7 +791,7 @@
     [[true, "Show timer"], [false, "Hide timer"]].forEach(([v, l]) => tm.append(chip(l, (st.prefs.timer !== false) === v, () => { if ((st.prefs.timer !== false) !== v) toggleTimer(); drawSettings(); })));
   }
   function applyTheme() {
-    const t = st.prefs.theme;
+    const t = mode === "chill" || mode === "drill" ? "dark" : st.prefs.theme;   // Chill, and its Test me cards, always use the night palette
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
     else document.documentElement.removeAttribute("data-theme");
   }
@@ -682,7 +845,10 @@
       <p class="note">Mastered means nailed on 3 separate days. Tap a topic to study it.</p>
       <h3>Weakest topics</h3>
       ${weakest.length ? `<div class="weakest">${weakest.map(w => `<div class="wrow"><div>${esc(CATS[w.cat].name)}<small>${Math.round(w.rate * 100)}% recall</small></div><button data-cat="${w.cat}">Practice</button></div>`).join("")}</div>` : `<p class="note">Review at least 5 cards in a topic to see how it compares.</p>`}
-      ${last ? `<h3>Last interview</h3><p class="note">${last.pct}% · ${last.nailed} of ${last.n} nailed · ${new Date(last.t).toLocaleDateString()}</p>` : ""}`;
+      ${last ? `<h3>Last interview</h3><p class="note">${last.pct}% · ${last.nailed} of ${last.n} nailed · ${new Date(last.t).toLocaleDateString()}</p>` : ""}
+      ${CBANK.length ? (() => { const c = CH.stats(ch, CBANK); return `<h3>Chill Mode</h3><div class="crow"><div>🌙 ${c.seen} of ${c.total} concepts seen<small>${c.saved} saved · separate from mastery</small></div><button data-go="chill">Open</button></div>`; })() : ""}`;
+    const go = $("#dash").querySelector('[data-go="chill"]');
+    if (go) go.addEventListener("click", () => { closeSheet(); setMode("chill"); });
     $("#dash").querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => {
       st.prefs.cats = [b.dataset.cat]; st.prefs.lvls = [1, 2, 3]; closeSheet(); mode = "topic"; interview = null; rebuild();
     }));
@@ -708,6 +874,13 @@
     const onButton = e.target.closest && e.target.closest("button");
     if (k === "arrowdown" || k === "j" || k === "pagedown") { e.preventDefault(); goTo(cur + 1); return; }
     if (k === "arrowup" || k === "k" || k === "pageup") { e.preventDefault(); goTo(cur - 1); return; }
+    if (s && s.kind === "chill") {
+      if ((k === " " || k === "enter") && !onButton) { e.preventDefault(); goTo(cur + 1); }
+      else if (k === "b") toggleChillBm(s);
+      else if (k === "l" || k === "e") toggleMore(s);
+      else if (k === "t") startDrill(s);
+      return;
+    }
     if (!s || s.kind !== "card") return;
     const q = byId[s.id];
     if ((k === " " || k === "enter") && !onButton) {
@@ -740,5 +913,5 @@
   applyTheme();
   updateHeader();
   rebuild();
-  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; } };   // for tests
+  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: id => renderChill({ id }) };   // for tests
 })();

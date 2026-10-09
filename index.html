@@ -36,6 +36,7 @@
 <main class="feed" id="feed" aria-label="Question feed"></main>
 <nav class="tabs" aria-label="Study modes">
   <button class="tab" data-mode="foryou" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>For You</span></button>
+  <button class="tab" data-mode="chill" title="Chill Mode: scroll through concepts, no quizzes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>Chill</span></button>
   <button class="tab" data-mode="topic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z"/></svg><span>Topics</span></button>
   <button class="tab" data-mode="weak" title="Review the questions you missed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Review</span></button>
   <button class="tab" data-mode="interview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Interview</span></button>
@@ -58,12 +59,25 @@
   </div>
 </section>
 
+<section class="sheet" id="chillSheet" role="dialog" aria-modal="true" aria-labelledby="chillTitle" hidden>
+  <div class="grab"></div>
+  <h2 id="chillTitle">🌙 Chill topics</h2>
+  <p class="note">Mixed feed shows a bit of everything. Pick topics to stay on just those.</p>
+  <h3>Show me</h3>
+  <div class="chips roomy" id="chillChips"></div>
+  <div class="sheet-foot topic-foot">
+    <div class="tsum"><b id="chillSel"></b><span class="count" id="chillCount"></span></div>
+    <button class="primary" id="chillStart">Start</button>
+  </div>
+</section>
+
 <section class="sheet" id="collSheet" role="dialog" aria-modal="true" aria-labelledby="collTitle" hidden>
   <div class="grab"></div>
   <h2 id="collTitle">Saved</h2>
   <div class="coll-list">
     <button class="coll" id="collTop"><span class="coll-name">Top 100</span><span class="coll-sub" id="collTopSub">The most-asked IB technicals</span></button>
     <button class="coll" id="collBm"><span class="coll-name">Bookmarks</span><span class="coll-sub" id="collBmSub">Cards you saved</span></button>
+    <button class="coll" id="collChill"><span class="coll-name">🌙 Chill saves</span><span class="coll-sub" id="collChillSub">Concepts you saved in Chill Mode</span></button>
   </div>
   <div class="sheet-foot"><span></span><button class="ghost" data-close>Close</button></div>
 </section>
@@ -96,6 +110,7 @@
       <tr><td><kbd>E</kbd> · <kbd>X</kbd> · <kbd>D</kbd></td><td>Explanation · Example · Go deeper</td></tr>
       <tr><td><kbd>Enter</kbd></td><td>Type a number (Interview)</td></tr>
       <tr><td><kbd>B</kbd></td><td>Bookmark</td></tr>
+      <tr><td><kbd>L</kbd> · <kbd>T</kbd></td><td>Chill: Learn more · Test me</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Close panels</td></tr>
     </table>
   </div>
@@ -108,6 +123,7 @@
 <div class="sr-only" aria-live="polite" id="live"></div>
 
 <script src="js/srs.js"></script>
+<script src="js/chill.js"></script>
 <script src="data/helpers.js"></script>
 <script src="data/accounting.js"></script>
 <script src="data/ev.js"></script>
@@ -117,6 +133,13 @@
 <script src="data/lbo.js"></script>
 <script src="data/modeling.js"></script>
 <script src="data/math.js"></script>
+<script src="data/chill/accounting.js"></script>
+<script src="data/chill/ev.js"></script>
+<script src="data/chill/valuation.js"></script>
+<script src="data/chill/dcf.js"></script>
+<script src="data/chill/ma.js"></script>
+<script src="data/chill/lbo.js"></script>
+<script src="data/chill/modeling.js"></script>
 <script src="js/app.js"></script>
 <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
 </body>
