@@ -331,7 +331,7 @@
       </div>`;
     el.innerHTML = `<article class="card chill-card t-${x.t}${x.stat ? " has-stat" : ""}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge link">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">
