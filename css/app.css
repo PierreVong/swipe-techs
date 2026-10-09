@@ -437,6 +437,20 @@ table.kv td:last-child { font-family: var(--mono); font-size: 13px; text-align: 
   .chill-foot { padding-left: 8px; padding-right: 8px; }
   .try-btn { padding: 8px 13px; }
 }
+/* Short phones (iPhone SE size): tighter Chill cards so more of them fit without scrolling inside the card. */
+@media (max-height: 700px) {
+  .chill-card .card-head { padding-top: 8px; }
+  .chill-body { gap: 9px; }
+  .hook { font-size: 20px; }
+  .explain.prose { font-size: 15px; line-height: 1.45; }
+  .cex { padding: 8px 12px 9px; }
+  .cex .lbl, .take .lbl { margin-bottom: 3px; }
+  .cex .prose { font-size: 14px; }
+  .cex .calc { font-size: 12.5px; }
+  .take { padding: 8px 12px 9px 13px; }
+  .take p { font-size: 15px; }
+  .chill-foot { padding-top: 3px; padding-bottom: 4px; }
+}
 /* Touch screens: no keyboard hints. */
 @media (hover: none) and (pointer: coarse) {
   kbd, .kbd-only { display: none !important; }

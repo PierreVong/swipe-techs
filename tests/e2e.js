@@ -565,7 +565,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   await step("Chill on desktop: Space moves on, L opens Learn more, B saves", async () => {
     await p3.locator('.tab[data-mode="chill"]').click();
     await p3.waitForFunction(() => window.__swipe.mode === "chill");
-    const i0 = await p3.evaluate(() => window.__swipe.cur);
+    const i0 = await p3.evaluate(() => { document.activeElement.blur(); return window.__swipe.cur; });   // Space on the focused tab would press the tab
     await p3.keyboard.press("Space"); await p3.waitForFunction(i => window.__swipe.cur === i + 1, i0);
     const el = p3.locator(".slide").nth(i0 + 1);
     await p3.keyboard.press("l");

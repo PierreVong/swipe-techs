@@ -109,7 +109,7 @@ fu:[["When could a financial buyer outbid a strategic?","<p>When debt markets ar
 
 {id:"m21",l:1,k:"math",n:{v:30,u:"%"},q:"A target trades at $20. The buyer offers $26 per share. What's the premium?",
 quick:`<p>30%. (26 − 20) ÷ 20 = 30%.</p>`,
-detail:`<p>Premiums are usually quoted against the undisturbed price and also against 30-day and 52-week averages.</p>`,
+detail:`<p>Premiums are usually quoted against the undisturbed price and also against the 30-day average and the 52-week high.</p>`,
 fu:[["The buyer pays in stock at $52 a share. What exchange ratio gives $26?","<p>26 ÷ 52 = 0.5 buyer shares per target share.</p>"]]},
 
 {id:"m22",l:3,k:"math",q:"Can an all-stock deal be accretive if the buyer's P/E is lower than the purchase P/E?",

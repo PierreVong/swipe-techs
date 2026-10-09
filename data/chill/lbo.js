@@ -76,8 +76,8 @@ more:{d:`<p>This is a key difference from a corporate acquisition, where the buy
 rel:["l28","l2"]},
 
 {id:"xl11",t:"concept",hook:"Where does buyout money come from, and where does it go?",
-body:`<p>A <b>sources and uses</b> table answers both. Uses: the price, refinancing old debt, fees. Sources: new debt, sponsor equity, sometimes existing cash. Totals match, and sponsor equity is usually the plug.</p>`,
-exk:"numbers",ex:TB([["Use: price (10x EBITDA of 100)","1,000"],["Use: fees","20"],["Source: debt (5.5x)","550"],["Source: equity (plug)","470"]]),
+body:`<p>A <b>sources and uses</b> table answers both. Uses: equity price, debt refinancing, fees. Sources: new debt, sponsor equity, sometimes existing cash. Totals match, and sponsor equity is usually the plug.</p>`,
+exk:"numbers",ex:TB([["Use: EV (10x EBITDA of 100)","1,000"],["Use: fees","20"],["Source: debt (5.5x)","550"],["Source: equity (plug)","470"]]),
 take:"Total sources always equal total uses, and the sponsor's equity fills the gap.",
 more:{d:`<p>Lenders set how much debt a deal can carry, usually as a multiple of EBITDA, so equity covers the rest of the price and fees. Here equity is 470 of 1,020 of total uses, about 46%. Most existing debt is refinanced because of change-of-control clauses and because new lenders want to be the senior creditors.</p>`,
 f:"Sponsor equity = Total uses − New debt − Other sources"},
@@ -145,5 +145,5 @@ body:`<p>A higher price with the same debt means a bigger <b>equity check</b>. U
 exk:"numbers",ex:`<p>EBITDA 100, debt 500, exit equity 790:</p><div class="calc">Buy at 8x: equity 300 → 790 ÷ 300 ≈ 2.6x</div><div class="calc">Buy at 9x: equity 400 → 790 ÷ 400 ≈ 2.0x</div>`,
 take:"The entry price is one of the biggest levers on LBO returns.",
 more:{d:`<p>Each extra turn of entry multiple (1x EBITDA) adds 100 to the equity check here, while exit proceeds stay the same. Over 5 years that cuts IRR from about 21% to about 15%. That's why sponsors negotiate hard on price, and why high entry multiples need a credible growth story.</p>`},
-rel:["l11","l17"]}
+rel:["l17","l11"]}
 ]);
