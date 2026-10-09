@@ -72,7 +72,7 @@ fu:[["Where does the income from that investment show up?","<p>As equity income,
 
 {id:"e14",top:1,l:2,k:"concept",q:"Which is more affected by capital structure: EV or equity value?",
 quick:`<p>Equity value; in theory, EV is capital-structure neutral.</p><p>Swapping debt for equity changes the mix of claims, not the value of the operations, which is why EV multiples are preferred when comparing companies with different leverage.</p>`,
-detail:`<p>In practice capital structure can affect EV a bit, through interest tax shields (which add value) and financial distress costs (which reduce it). That's the Modigliani-Miller trade-off.</p>`,
+detail:`<p>In practice capital structure can affect EV a bit, through interest tax shields (which add value) and financial distress costs (which reduce it). That's the trade-off theory of capital structure.</p>`,
 fu:[["Two companies have the same EV. Why might their equity values differ?","<p>Different net debt. A company with 300 more net debt has 300 less equity value for the same EV.</p>"]]},
 
 {id:"e15",l:3,k:"concept",q:"What debt-like items might you add to EV beyond bank debt and bonds?",
