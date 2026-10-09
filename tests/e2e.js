@@ -478,6 +478,47 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await pC.keyboard.press("Escape");
   });
 
+  await step("Chill hides the study goal and streak; a double tap means More like this", async () => {
+    await pC.locator('.tab[data-mode="chill"]').click();
+    await pC.waitForFunction(() => window.__swipe.mode === "chill");
+    assert.ok(await pC.locator("#goalBtn").isHidden()); assert.ok(await pC.locator("#streak").isHidden());
+    const c = await chillCur();
+    await c.el.locator(".hook").dblclick();
+    await pC.waitForFunction(id => !!window.__swipe.chill.like[id], c.id);
+    await c.el.locator(".more-btn").click();
+    assert.equal(await c.el.locator(".like-btn").getAttribute("aria-pressed"), "true");
+    await c.el.locator(".like-btn").click();
+    assert.equal(await pC.evaluate(id => !!window.__swipe.chill.like[id], c.id), false, "the button turns it off again");
+  });
+
+  await step("Rabbit hole puts related concepts next, then the feed carries on", async () => {
+    const c = await chillCur();
+    const tags = await pC.evaluate(id => window.CB.find(x => x.id === id).k, c.id);
+    await c.el.locator(".rh-btn").click();
+    await chillWait(c.idx + 1);
+    const n = await c.el.locator(".rh-btn small").textContent().then(t => parseInt(t));
+    for (let i = 1; i <= n; i++) {
+      const r = await chillCur();
+      assert.match(await r.el.locator(".badge.rh").textContent(), new RegExp(`${i} of ${n}`));
+      const k = await pC.evaluate(id => window.CB.find(x => x.id === id).k, r.id);
+      assert.ok(k.some(t => tags.includes(t)), `${r.id} shares a concept with ${c.id}`);
+      await pC.keyboard.press("ArrowDown"); await chillWait(r.idx + 1);
+    }
+    const after = await chillCur();
+    assert.equal(after.kind, "chill"); assert.equal(await after.el.locator(".badge.rh").count(), 0);
+  });
+
+  await step("reopening the app goes back to the same Chill card, without repeating earlier ones", async () => {
+    await pC.waitForTimeout(300);
+    const before = await chillApp(), id = before.slides[before.cur].id;
+    const shown = before.slides.slice(0, before.cur).map(s => s.id);
+    await pC.reload();
+    await pC.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+    const a = await chillApp();
+    assert.equal(a.mode, "chill"); assert.equal(a.slides[0].id, id);
+    assert.ok(a.slides.slice(1).every(s => !shown.includes(s.id)), "next cards are new to this session");
+  });
+
   await step("most Chill cards fit on one phone screen without scrolling inside the card", async () => {
     const r = await pC.evaluate(() => {
       const feed = document.querySelector(".feed"); let fit = 0;

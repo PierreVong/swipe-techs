@@ -69,3 +69,62 @@ test("stats count seen and saved within the deck", () => {
   C.markSeen(c, "a", T0); C.markSeen(c, "zzz", T0); C.toggleBm(c, "b");
   assert.deepEqual(C.stats(c, ids.map(id => ({ id }))), { total: 5, seen: 1, saved: 1 });
 });
+
+const tagged = {
+  w1: { c: "dcf", t: "concept", x: "numbers", k: ["wacc"], core: true }, w2: { c: "val", t: "myth", x: "visual", k: ["wacc", "cost-of-equity"] },
+  w3: { c: "dcf", t: "fact", x: "analogy", k: ["cost-of-equity"] }, l1: { c: "lbo", t: "concept", x: "visual", k: ["leverage"] },
+  l2: { c: "lbo", t: "real", x: "numbers", k: ["leverage", "returns"] }, g1: { c: "acct", t: "analogy", x: "scenario", k: ["goodwill"] },
+};
+const tids = Object.keys(tagged);
+
+test("a store saved by the first Chill release loads with the new fields and keeps its progress", () => {
+  const store = mem();
+  store.setItem(C.KEY, JSON.stringify({ v: 1, seen: { a: { n: 2, t: T0 } }, bm: ["a"], cats: ["lbo"] }));
+  const c = C.load(store);
+  assert.equal(c.seen.a.n, 2); assert.deepEqual(c.bm, ["a"]); assert.deepEqual(c.cats, ["lbo"]);
+  assert.deepEqual(c.like, {}); assert.deepEqual(c.int, {}); assert.equal(c.pos, null); assert.deepEqual(c.recent, []);
+});
+
+test("reopening Chill within 12 hours resumes on the last card without repeating the session", () => {
+  const c = C.blank();
+  C.setPos(c, "w2", ["w1", "w2"], T0);
+  assert.deepEqual(C.resume(c, T0 + 3600e3), { id: "w2", session: ["w1", "w2"] });
+  assert.equal(C.resume(c, T0 + 13 * 3600e3), null, "a new night starts a fresh feed");
+  assert.equal(C.resume(C.blank(), T0), null);
+});
+
+test("the next card avoids the topics, card types and concepts just shown", () => {
+  const c = C.blank();
+  for (let k = 0; k < 30; k++) {
+    const id = C.pick(c, tids, { now: T0, session: ["w1"], rnd: Math.random, meta: tagged });
+    assert.ok(tagged[id].c !== "dcf" && tagged[id].t !== "concept" && !tagged[id].k.includes("wacc"), id);
+  }
+});
+
+test("saves and More like this tilt the feed toward related concepts without taking it over", () => {
+  const c = C.blank();
+  C.toggleLike(c, "l1", T0); C.toggleBm(c, "l1"); C.markSeen(c, "l1", T0);
+  const n = { l2: 0, other: 0 };
+  let r = 0; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  for (let k = 0; k < 400; k++) { const id = C.pick(c, tids.filter(x => x !== "l1"), { now: T0, rnd, meta: tagged }); id === "l2" ? n.l2++ : n.other++; }
+  assert.ok(n.l2 > 400 / 5 * 1.5, `liked topic picked more often (${n.l2})`);
+  assert.ok(n.other > n.l2, "other concepts still come up");
+  assert.equal(C.toggleLike(c, "l1"), false); assert.deepEqual(c.like, {});
+  C.interest(c, "w1"); C.interest(c, "w1"); C.interest(c, "w1"); C.interest(c, "w1");
+  assert.equal(c.int.w1, 3, "interest is capped");
+});
+
+test("seen concepts that come back favour saved, liked and core ideas", () => {
+  const c = C.blank();
+  tids.forEach(id => C.markSeen(c, id, T0 - 3 * DAY));
+  C.toggleBm(c, "g1");
+  assert.equal(C.pick(c, tids, { now: T0, rnd: () => 0.01, meta: tagged }), "g1");
+});
+
+test("Rabbit hole lists concepts that share a tag, closest and unseen first", () => {
+  const c = C.blank();
+  assert.deepEqual(C.related(c, "w2", tids, tagged), ["w1", "w3"]);
+  C.markSeen(c, "w1", T0);
+  assert.deepEqual(C.related(c, "w2", tids, tagged, 1), ["w3"], "unseen first among equally close concepts");
+  assert.deepEqual(C.related(c, "g1", tids, tagged), []);
+});

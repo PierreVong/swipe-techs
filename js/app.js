@@ -35,10 +35,11 @@
   const CH = window.CHILLS;
   const CBANK = window.CB || [];
   const chillById = Object.fromEntries(CBANK.map(x => [x.id, x]));
-  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t }]));
+  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t, x: x.exk, k: x.k || [], core: !!x.core }]));
+  const CHILL_TAGS = window.CHILL_TAGS || {};
   const CHILL_CATS = ["acct", "ev", "val", "dcf", "ma", "lbo", "model"].filter(c => CBANK.some(x => x.c === c));
-  const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"] };
-  const EXK = { numbers: "Quick numbers", analogy: "Think of it like this", scenario: "Picture this" };
+  const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"], analogy: ["🧩", "Analogy"] };
+  const EXK = { numbers: "Quick numbers", analogy: "Think of it like this", scenario: "Picture this", visual: "At a glance" };
   let ch = CH.load(storage);
   const persistChill = () => CH.save(storage, ch);
 
@@ -120,6 +121,7 @@
   let timer = null;
   let chillSaved = false; // Chill feed limited to saved concepts
   let chillSession = [];  // concepts shown since the app opened, so a session doesn't repeat itself
+  let chillQueue = [];    // concepts to show next before the picker: the card to resume on, or a Rabbit hole
   let drill = null;       // {ids, next}: "Test me" from a Chill card
   let dwell = null, curEl = null;
   let privShuffle = null; // this session's shuffled order for the private collection
@@ -168,10 +170,12 @@
   function appendChill() {
     const ids = chillIds();
     // Saved concepts play through once; the main feed keeps going.
-    const id = chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now() });
+    let q = null;
+    while (chillQueue.length && !q) { const x = chillQueue.shift(); if (chillById[x.id]) q = x; }
+    const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now() });
     if (!id) { appendEnd(); return false; }
-    const s = { kind: "chill", id, first: !chillSession.length };
-    chillSession.push(id);
+    const s = { kind: "chill", id, first: !chillSession.length && !chillSaved, rh: q && q.rh };
+    if (chillSession[chillSession.length - 1] !== id) chillSession.push(id);
     s.el = renderChill(s);
     feed.append(s.el); slides.push(s); observer.observe(s.el);
     return true;
@@ -301,14 +305,19 @@
     // Quick-example cards lead with the numbers; everything else explains first.
     const main = x.t === "example" ? exBlock + body : body + exBlock;
     const rel = (x.rel || []).filter(id => byId[id]);
+    const rabbit = chillSaved ? [] : rabbitIds(x.id);
     const more = `<div class="more-body" hidden>
         <div class="prose">${x.more.d}</div>
         ${x.more.f ? `<div class="prose"><div class="formula">${esc(x.more.f)}</div></div>` : ""}
         ${rel.length ? `<div class="iq"><div class="lbl">Related interview question</div><p>${esc(byId[rel[0]].q)}</p></div>` : ""}
+        <div class="more-acts">
+          ${rabbit.length ? `<button class="rh-btn"><span aria-hidden="true">🕳️</span> Rabbit hole <small>${rabbit.length} related</small></button>` : ""}
+          <button class="like-btn" aria-pressed="${!!ch.like[x.id]}"><span aria-hidden="true">👍</span> More like this</button>
+        </div>
       </div>`;
     el.innerHTML = `<article class="card chill-card t-${x.t}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<span class="badge rh">🕳️ ${s.rh.i} of ${s.rh.n}</span>` : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">
@@ -333,7 +342,36 @@
     const open = b.getAttribute("aria-expanded") !== "true";
     b.setAttribute("aria-expanded", open); body.hidden = !open;
     b.querySelector("span").textContent = open ? "Show less" : "Learn more";
-    if (open) { markChillSeen(s); const sc = s.el.querySelector(".card-scroll"); sc.scrollTo({ top: body.offsetTop - sc.offsetTop - 12, behavior: reduced() ? "auto" : "smooth" }); }
+    if (open) { markChillSeen(s); CH.interest(ch, s.id); persistChill(); const sc = s.el.querySelector(".card-scroll"); sc.scrollTo({ top: body.offsetTop - sc.offsetTop - 12, behavior: reduced() ? "auto" : "smooth" }); }
+  }
+  // Rabbit hole: related concepts (shared tags, any topic) not already shown this session.
+  function rabbitIds(id) {
+    const done = new Set(chillSession);
+    return CH.related(ch, id, CBANK.map(x => x.id).filter(x => !done.has(x)), CHILL_META, 4);
+  }
+  function startRabbit(s) {
+    const ids = rabbitIds(s.id);
+    if (!ids.length) return;
+    CH.interest(ch, s.id); persistChill();
+    // Drop the cards already lined up after this one, then put the related concepts next.
+    slides.splice(cur + 1).forEach(x => { observer.unobserve(x.el); x.el.remove(); const k = chillSession.lastIndexOf(x.id); if (k > -1) chillSession.splice(k, 1); });
+    ended = false;
+    chillQueue = ids.map((id, i) => ({ id, rh: { i: i + 1, n: ids.length } }));
+    ensureAhead();
+    announce(`Rabbit hole: ${ids.length} related concepts next`);
+    goTo(cur + 1);
+  }
+  // More like this: from the button in Learn more, or a double tap on the card (which only ever turns it on).
+  function likeChill(s, on) {
+    const now = !!ch.like[s.id];
+    if (on === now) return;
+    CH.toggleLike(ch, s.id, Date.now()); persistChill();
+    slides.filter(x => x.id === s.id && x.kind === "chill").forEach(x => { const b = x.el.querySelector(".like-btn"); if (b) b.setAttribute("aria-pressed", on); });
+    if (on) {
+      const pop = document.createElement("span"); pop.className = "likepop"; pop.setAttribute("aria-hidden", "true"); pop.textContent = "👍";
+      s.el.querySelector(".card").append(pop); setTimeout(() => pop.remove(), 900);
+    }
+    announce(on ? "More like this" : "Removed");
   }
   function toggleChillBm(s) {
     const on = CH.toggleBm(ch, s.id); persistChill();
@@ -348,7 +386,7 @@
   function startDrill(s) {
     const ids = (chillById[s.id].rel || []).filter(id => byId[id]);
     if (!ids.length) return;
-    markChillSeen(s);
+    markChillSeen(s); CH.interest(ch, s.id); persistChill();
     mode = "drill"; interview = null; drill = { ids, next: 0, from: s.id };
     rebuild();
   }
@@ -561,6 +599,12 @@
       if (t.closest(".bm")) return toggleChillBm(s);
       if (t.closest(".more-btn")) return toggleMore(s);
       if (t.closest(".try-btn")) return startDrill(s);
+      if (t.closest(".rh-btn")) return startRabbit(s);
+      if (t.closest(".like-btn")) return likeChill(s, !ch.like[s.id]);
+      if (!t.closest("button, a") && t.closest(".card")) {
+        const now = Date.now();
+        if (s.tap && now - s.tap < 350) { s.tap = 0; likeChill(s, true); } else s.tap = now;
+      }
       return;
     }
     if (s.kind !== "card") return;
@@ -600,6 +644,7 @@
     clearTimeout(dwell);
     // A concept counts as seen once it has been on screen for a couple of seconds (fast flicks don't count).
     if (s.kind === "chill") dwell = setTimeout(() => { if (slides[cur] === s) markChillSeen(s); }, 2000);
+    if (s.kind === "chill" && !chillSaved) { CH.setPos(ch, s.id, chillSession.slice(0, chillSession.lastIndexOf(s.id) + 1), Date.now()); persistChill(); }
     if (s.kind === "card" && mode === "interview" && !s.t0) s.t0 = Date.now();
     if (s.kind === "summary") renderSummary(s);
     ensureAhead();
@@ -635,6 +680,12 @@
     if (mode !== "interview" && mode !== "drill") { st.prefs.mode = mode; persist(); }
     if (mode !== "chill") chillSaved = false;
     if (mode !== "drill") drill = null;
+    chillQueue = [];
+    if (mode === "chill" && !chillSaved) {
+      // Pick up where you left off: same card, and no repeats of what you saw before closing the app.
+      const r = CH.resume(ch, Date.now());
+      if (r && chillIds().includes(r.id)) { chillSession = r.session; chillQueue = [{ id: r.id }]; }
+    }
     privShuffle = null;
     applyTheme();
     ensureAhead();
@@ -1075,6 +1126,7 @@
 
   function applyTheme() {
     const t = mode === "chill" || mode === "drill" ? "dark" : st.prefs.theme;   // Chill, and its Test me cards, always use the night palette
+    document.body.classList.toggle("in-chill", mode === "chill");   // no study goal or streak in the header while scrolling Chill
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
     else document.documentElement.removeAttribute("data-theme");
   }
