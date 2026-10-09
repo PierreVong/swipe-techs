@@ -1,16 +1,35 @@
-// Offline cache: serve from cache, refresh in the background.
-const CACHE = "swipetechs-v1";
-const CORE = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
+// Offline support. App files: network first (so updates show up right away), cache as fallback.
+// Google Fonts: cache first.
+const CACHE = "swipetechs-v2";
+const CORE = [
+  "./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
+  "css/app.css", "js/srs.js", "js/app.js",
+  "data/helpers.js", "data/accounting.js", "data/ev.js", "data/valuation.js", "data/dcf.js",
+  "data/ma.js", "data/lbo.js", "data/modeling.js", "data/math.js",
+];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(caches.open(CACHE).then(async c => {
-    const hit = await c.match(e.request);
-    const net = fetch(e.request).then(r => { if (r.ok || r.type === "opaque") c.put(e.request, r.clone()); return r; }).catch(() => hit);
-    return hit || net;
-  }));
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin === location.origin) {
+    e.respondWith(fetch(req).then(r => {
+      if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return r;
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match("index.html"))));
+    return;
+  }
+  if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
+    e.respondWith(caches.open(CACHE).then(async c => {
+      const hit = await c.match(req);
+      if (hit) return hit;
+      const r = await fetch(req);
+      if (r.ok || r.type === "opaque") c.put(req, r.clone());
+      return r;
+    }));
+  }
 });

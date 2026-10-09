@@ -1,0 +1,9 @@
+{
+  "name": "swipe-techs",
+  "private": true,
+  "description": "Swipe feed for investment banking technical interview prep",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e.js"
+  }
+}
