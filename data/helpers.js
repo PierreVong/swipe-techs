@@ -26,7 +26,7 @@ window.TB = function (rows) {
 /* Small diagrams for Chill cards: plain HTML + CSS, no images or libraries. Values only set bar lengths;
    labels are shown exactly as written, so put units and signs in the label text.
      WF(rows)      bridge / waterfall: [label, value, "base" | "add" | "sub" | "total", shown?]
-     BARS(rows)    comparison bars: [label, value, shown?, highlight?]
+     BARS(rows)    comparison bars: [label, value, shown?, highlight?] (negative values draw in red)
      SPLIT(rows)   one 100% bar with a legend: [label, value, shown?]
      FLOW(steps)   steps joined by arrows: ["Revenue", "EBITDA", ...] (a step can be [title, small note])
      VS(a, b)      two columns: {t: title, p: [short lines]} */
@@ -48,7 +48,7 @@ window.TB = function (rows) {
   window.BARS = function (rows) {
     var max = Math.max.apply(null, rows.map(function (r) { return Math.abs(r[1]); })) || 1;
     return '<div class="viz bars" role="img" aria-label="' + rows.map(function (r) { return r[0] + " " + fmt(r, 2); }).join(", ") + '">' + rows.map(function (r) {
-      return '<div class="wr' + (r[3] ? " hi" : "") + '"><span class="wl">' + r[0] + '</span><span class="wt"><i style="width:' + Math.max(1.5, 100 * Math.abs(r[1]) / max).toFixed(1) + '%"></i></span><span class="wv">' + fmt(r, 2) + '</span></div>';
+      return '<div class="wr' + (r[3] ? " hi" : "") + (r[1] < 0 ? " neg" : "") + '"><span class="wl">' + r[0] + '</span><span class="wt"><i style="width:' + Math.max(1.5, 100 * Math.abs(r[1]) / max).toFixed(1) + '%"></i></span><span class="wv">' + fmt(r, 2) + '</span></div>';
     }).join("") + '</div>';
   };
   window.SPLIT = function (rows) {

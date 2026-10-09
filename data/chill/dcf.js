@@ -102,7 +102,7 @@ rel:["d10","v8"]},
 body:`<p>Match the cash to whoever owns it. Cash before interest belongs to lenders and owners together; cash after debt payments belongs to <b>shareholders</b> alone.</p>`,
 exk:"visual",ex:VS({t:"Unlevered FCF",p:["Before interest","Lenders + owners","Discount at WACC","→ Enterprise value"]},{t:"Levered FCF",p:["After debt payments","Owners only","Cost of equity","→ Equity value"]}),
 take:"Match the discount rate to whose cash you're valuing.",
-more:{d:`<p>Think of a rented building: the rent is shared by the bank and the owner, so it gets a blended rate; rent after the mortgage is the owner's alone, so it gets a higher rate. Discounting levered FCF at WACC understates the required return and overstates value. Bankers mostly use unlevered DCFs because they don't require projecting the capital structure. Levered DCFs show up for banks.</p>`},
+more:{d:`<p>Think of a rented building: the rent is shared by the bank and the owner, so it gets a blended rate; rent after the mortgage is the owner's alone, so it gets a higher rate. Discounting levered FCF at WACC understates the required return and overstates value. Bankers mostly use unlevered DCFs because they don't require projecting the capital structure. Levered approaches show up mainly for financial institutions like banks, where debt is part of the business.</p>`},
 rel:["v9","v4"]},
 
 {id:"xd15",t:"real",k:["terminal-value","multiples"],hook:"Why price a DCF's terminal value like a company sale?",
@@ -180,9 +180,9 @@ more:{d:`<p>The 10-year government bond is the common choice; some banks use 20-
 rel:["d7","v6"]},
 
 {id:"xd25",t:"intuition",k:["wacc","debt-paydown","capital-structure"],hook:"After a buyout, debt falls every year. Should the WACC stay fixed?",
-body:`<p>Not really. As debt is repaid, its weight shrinks and the equity gets safer, so the <b>WACC</b> usually drifts up as the tax shield fades.</p>`,
+body:`<p>Not really. As debt is repaid, the mix shifts toward pricier equity and the tax shield shrinks, so the <b>WACC</b> usually drifts up, even as the equity gets safer.</p>`,
 exk:"numbers",ex:`<div class="calc">Year 1: 60% debt, WACC 8%</div><div class="calc">Year 5: 20% debt, WACC 9%</div><div class="calc">A fixed 8% overvalues the later years</div>`,
 take:"When the debt changes fast, the discount rate should change too.",
-more:{d:`<p>A constant WACC assumes a stable capital structure. After an LBO, debt is paid down quickly, so the weights and the cost of equity shift every year. One fix is a year-by-year WACC with a relevered beta for each year. The cleaner fix is APV (adjusted present value): value the business at the unlevered cost of equity, then add the present value of the interest tax shields separately.</p>`},
+more:{d:`<p>A constant WACC assumes a stable capital structure. After an LBO, debt is paid down quickly, so the weights and the cost of equity shift every year. One fix is a year-by-year WACC with a relevered beta for each year. The cleaner fix is APV (adjusted present value): value the business at the unlevered cost of equity, then add the present value of the interest tax shields separately. The direction isn't guaranteed: if debt starts high enough for distress costs to bite, early paydown can lower WACC.</p>`},
 rel:["d12","v11"]}
 ]);

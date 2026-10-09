@@ -21,7 +21,7 @@ more:{d:`<p>Trading comps reflect minority stakes traded between investors, whil
 rel:["v2","v28"]},
 
 {id:"xv4",t:"example",core:true,k:["ev-bridge","multiples","equity-value"],hook:"Peers trade at 10x EBITDA. Why isn't the share price 10 × EBITDA ÷ shares?",
-body:`<p>An EBITDA multiple gives you <b>enterprise value</b>, which lenders share too. Subtract net debt to get the owners' slice, then divide by diluted shares: $150 ÷ 10 = $15.</p>`,
+body:`<p>An EBITDA multiple gives you <b>enterprise value</b>, which lenders share too. Subtract net debt to get the owners' slice, then divide by diluted shares: $150 ÷ 10 shares = $15.</p>`,
 exk:"visual",ex:WF([["EV (10 × $20)",200,"base","$200"],["− Net debt",50,"sub","−$50"],["Equity value",150,"total","$150"]]),
 take:"EBITDA multiples give EV; bridge to equity before dividing.",
 more:{d:`<p>Match the multiple to the value it produces: EV multiples like EV/EBITDA or EV/Revenue give enterprise value, while equity multiples like P/E give equity value directly. The bridge subtracts debt, preferred stock and noncontrolling interest and adds cash. Use diluted shares, which include in-the-money options and convertibles.</p>`,
@@ -88,7 +88,7 @@ rel:["v20","v13"]},
 
 {id:"xv13",t:"example",k:["multiples","valuation-methods"],hook:"Why can a company be worth more broken into pieces?",
 body:`<p>A <b>sum-of-the-parts</b> values each division at its own multiple: $10 of software EBITDA at 15x, $20 of factory EBITDA at 5x. If the market pays less for the group, that's a conglomerate discount.</p>`,
-exk:"visual",ex:WF([["Software (15x)",150,"base","$150"],["Factory (5x)",100,"add","+$100"],["Sum of parts",250,"total","$250"],["Discount",40,"sub","−$40"],["Market value",210,"total","$210"]]),
+exk:"visual",ex:WF([["Software (15x)",150,"base","$150"],["Factory (5x)",100,"add","+$100"],["Sum of parts",250,"total","$250"],["Discount",40,"sub","−$40"],["Market EV",210,"total","$210"]]),
 take:"Different businesses deserve different multiples.",
 more:{d:`<p>A fast-growing unit deserves a richer multiple than a slow one, so a single blended multiple misprices the mix. Bankers subtract unallocated head-office costs, often valued at a multiple, and any tax cost of separating the units. A wide gap between the sum of the parts and the market value is often the argument for a spin-off or a divestiture.</p>`},
 rel:["v31"]},
@@ -160,7 +160,7 @@ more:{d:`<p>Earnings yield is not cash in your pocket: part of earnings is usual
 f:"Earnings yield = EPS ÷ Share price = 1 ÷ P/E"},
 rel:["v18","v41"]},
 
-{id:"xv23",t:"concept",k:["valuation-methods","risk-return"],hook:"Two identical companies, one listed, one private. Why is the private one worth less?",
+{id:"xv23",t:"concept",k:["valuation-methods","risk-return"],hook:"Same business, listed or private. Why is a private stake worth less?",
 body:`<p>Listed shares sell in seconds; a private stake can take years to sell. Buyers want a discount for that, an <b>illiquidity discount</b>, often around 20–30% for minority stakes.</p>`,
 exk:"numbers",ex:`<div class="calc">Listed peers imply equity of $100m</div><div class="calc">Illiquidity discount of 25%: −$25m</div><div class="calc">Private minority value: $75m</div>`,
 take:"Being easy to sell is worth real money.",

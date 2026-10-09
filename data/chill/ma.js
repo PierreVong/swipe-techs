@@ -152,10 +152,10 @@ body:`<p>With an <b>earnout</b>: part of the price is paid later, only if the bu
 exk:"analogy",ex:`<p>Like selling your lemonade stand for $100 today, plus $50 more if it sells 1,000 cups next summer.</p>`,
 take:"An earnout turns trust me into show me.",
 more:{d:`<p>Earnouts are common in private deals, especially for founder-run or fast-growing targets. They usually run 1 to 3 years and are tied to revenue or EBITDA. They often cause disputes, because the buyer now runs the business and can affect whether targets are hit. Under US GAAP the buyer records the earnout's fair value as part of the price at closing, and later changes in that value usually go through the income statement.</p>`},
-rel:["m10","m25"]},
+rel:["m12","m25"]},
 
 {id:"xm22",t:"real",k:["goodwill","synergies"],hook:"One merger, one year, a $99 billion loss. How?",
-body:`<p>AOL agreed to buy Time Warner with its stock at the dot-com peak. When internet values crashed, the combined company wrote down its <b>goodwill</b> and lost about $99 billion in 2002.</p>`,
+body:`<p>AOL agreed to buy Time Warner with its stock near the dot-com peak. When internet values crashed, the combined company wrote down its <b>goodwill</b> and lost about $99 billion in 2002.</p>`,
 exk:"visual",ex:FLOW([["Jan 2000","Deal announced"],["2000–02","Dot-com bust"],["2002","About $99B loss"]]),
 take:"Overpay at the peak, and goodwill impairment sends the bill later.",
 more:{d:`<p>The deal, announced in January 2000 and closed in January 2001, was one of the largest mergers ever and was paid for in richly valued AOL stock. Most of the 2002 loss came from goodwill impairment: a huge charge on adopting new goodwill rules early in 2002, and another at year-end. The write-downs cost no cash, but they showed the price paid far exceeded what the business turned out to be worth.</p>`},

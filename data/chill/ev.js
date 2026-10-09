@@ -55,7 +55,7 @@ take:"Whole pizza with whole pizza, slice with slice.",
 more:{d:`<p>Before-interest metrics go with EV: revenue, EBITDA, EBIT and unlevered free cash flow. After-interest metrics go with equity value: net income, EPS and levered free cash flow, giving P/E and price-to-FCF. A mismatched multiple changes when a company's capital structure changes, even if the business is identical, which defeats the purpose of comparing companies.</p>`},
 rel:["e10","e11"]},
 
-{id:"xe9",t:"real",core:true,k:["multiples","capital-structure","comps"],hook:"Why do bankers prefer EV/EBITDA to P/E?",
+{id:"xe9",t:"example",core:true,k:["multiples","capital-structure","comps"],hook:"Why do bankers prefer EV/EBITDA to P/E?",
 body:`<p>Interest comes out before net income, so <b>P/E</b> shifts with debt. Two identical businesses, one with debt, share the same EV/EBITDA but show very different P/Es.</p>`,
 exk:"visual",ex:BARS([["EV/EBITDA, both",10,"10.0x"],["P/E, no debt",13.3,"13.3x"],["P/E, $500 debt",8.9,"8.9x",1]]),
 take:"EV/EBITDA ignores how a business is funded; P/E doesn't.",
@@ -140,7 +140,7 @@ more:{d:`<p>Bonds trade well below face value when rates have risen since they w
 rel:["e24","e2"]},
 
 {id:"xe21",t:"real",k:["ev-bridge","valuation-methods"],hook:"Why did Yahoo's core business once look worth less than nothing?",
-body:`<p>In the mid-2010s, Yahoo's stakes in Alibaba and Yahoo Japan were worth about as much as all of Yahoo. Subtract those <b>equity investments</b> and the core business looked worthless.</p>`,
+body:`<p>In the mid-2010s, Yahoo's stakes in Alibaba and Yahoo Japan were worth about as much as all of Yahoo, at times more. Subtract those <b>equity investments</b> and the core business looked worth zero or less.</p>`,
 exk:"scenario",ex:`<p>A $500k house with a $500k painting inside: take out the painting, and the house cost you nothing.</p>`,
 take:"Subtract the stakes a company owns, then see what's left.",
 more:{d:`<p>You subtract unconsolidated stakes because their earnings aren't in the parent's EBITDA, so EV and EBITDA stay matched. Yahoo's puzzle was largely tax: selling the stakes would have triggered a huge capital-gains tax bill, so they were worth less to shareholders than their market value. In 2017 Yahoo sold its operating business to Verizon, and the leftover company holding the stakes was renamed Altaba.</p>`},

@@ -551,3 +551,4 @@ body.in-chill #goalBtn, body.in-chill #streak { display: none; }
 .likepop { position: absolute; left: 50%; top: 42%; font-size: 64px; transform: translate(-50%, -50%) scale(.4); opacity: 0; pointer-events: none; animation: likepop .85s ease-out forwards; z-index: 2; }
 @keyframes likepop { 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 60% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .likepop { animation-duration: .01s; } }
+.viz.bars .neg .wt i { background: var(--bad); }
