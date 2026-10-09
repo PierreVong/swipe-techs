@@ -1,0 +1,4 @@
+# Private, copyrighted study material stays on your computer. Never commit it.
+*.pdf
+*.json
+private/

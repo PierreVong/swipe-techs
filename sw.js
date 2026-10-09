@@ -1,9 +1,9 @@
 // Offline support. App files: network first (so updates show up right away), cache as fallback.
-// Google Fonts: cache first.
-const CACHE = "swipetechs-v4";
+// Google Fonts: cache first. A private question collection lives in IndexedDB and never passes through here.
+const CACHE = "swipetechs-v5";
 const CORE = [
   "./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
-  "css/app.css", "js/srs.js", "js/chill.js", "js/app.js",
+  "css/app.css", "js/srs.js", "js/chill.js", "js/private.js", "js/app.js",
   "data/helpers.js", "data/accounting.js", "data/ev.js", "data/valuation.js", "data/dcf.js",
   "data/ma.js", "data/lbo.js", "data/modeling.js", "data/math.js",
   "data/chill/accounting.js", "data/chill/ev.js", "data/chill/valuation.js", "data/chill/dcf.js",

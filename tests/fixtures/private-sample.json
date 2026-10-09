@@ -1,0 +1,207 @@
+{
+ "format": "swipetechs-private-collection",
+ "version": 1,
+ "id": "sample",
+ "name": "Sample Guide",
+ "short": "Sample",
+ "source": "Synthetic questions written for the app's tests",
+ "created": "2026-10-09T00:00:00+00:00",
+ "count": 8,
+ "questions": [
+  {
+   "id": "pv-acct-b01",
+   "c": "acct",
+   "l": 1,
+   "lvl": "Basic",
+   "sec": "Accounting",
+   "num": 1,
+   "page": 10,
+   "pages": [
+    10
+   ],
+   "order": 1,
+   "q": "Name the three financial statements and say what each one shows.",
+   "a": "The **income statement** shows revenue, expenses and profit over a period.\n\nThe **balance sheet** shows assets, liabilities and equity at one point in time.\n\nThe **cash flow statement** explains how cash changed over the period.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Three statements: profit over a period, what the company owns and owes on one date, and where the cash went.",
+    "example": "",
+    "update": null,
+    "similar": [
+     "a1"
+    ]
+   }
+  },
+  {
+   "id": "pv-acct-b02",
+   "c": "acct",
+   "l": 1,
+   "lvl": "Basic",
+   "sec": "Accounting",
+   "num": 2,
+   "page": 10,
+   "pages": [
+    10,
+    11
+   ],
+   "order": 2,
+   "q": "Why can net income and cash from operations differ a lot?",
+   "a": "Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. \n\nWorking capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. \n\nWorking capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. \n\nWorking capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. \n\nWorking capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. Working capital ties the income statement to cash. When a company sells on credit, revenue and profit show up right away, but the cash arrives later, so accounts receivable rises and cash from operations falls short of net income. \n\n- Receivables up: less cash\n- Payables up: more cash\n- Inventory up: less cash",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Profit is counted when earned; cash moves when it's collected or paid.",
+    "example": "Revenue 100 on credit, costs 60 paid in cash: net income is 40 before tax, but operating cash is −60 until the 100 is collected.",
+    "update": null,
+    "similar": []
+   }
+  },
+  {
+   "id": "pv-acct-b03",
+   "c": "acct",
+   "l": 1,
+   "lvl": "Basic",
+   "sec": "Accounting",
+   "num": 3,
+   "page": 11,
+   "pages": [
+    11
+   ],
+   "order": 3,
+   "q": "How does a lease show up on the balance sheet?",
+   "a": "Only long leases that work like a purchase go on the balance sheet. Other leases are just rent: an operating expense, with nothing recorded as an asset or a liability.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Today almost every lease longer than a year is on the balance sheet.",
+    "example": "",
+    "update": {
+     "topic": "Lease accounting",
+     "why": "A newer standard put nearly all leases on the balance sheet.",
+     "text": "Leases longer than 12 months now show a right-of-use asset and a lease liability, whether they are finance or operating leases."
+    },
+    "similar": []
+   }
+  },
+  {
+   "id": "pv-acct-a01",
+   "c": "acct",
+   "l": 3,
+   "lvl": "Advanced",
+   "sec": "Accounting",
+   "num": 1,
+   "page": 12,
+   "pages": [
+    12
+   ],
+   "order": 4,
+   "q": "What do these discount periods look like with a half-year stub?",
+   "a": "Here is the pattern:\n\n```table\n | Stub | Year 1 | Year 2\nNormal: | 0.5 | 1.5 | 2.5\nMid-year: | 0.25 | 1 | 2\nNote: | Same | < | <\n```\n\nThe stub is halved; later years drop by 0.5.",
+   "notes": "This answer has a table.",
+   "flags": [
+    "table"
+   ],
+   "added": {
+    "simple": "",
+    "example": "",
+    "update": null,
+    "similar": []
+   }
+  },
+  {
+   "id": "pv-acct-a02",
+   "c": "acct",
+   "l": 3,
+   "lvl": "Advanced",
+   "sec": "Accounting",
+   "num": 2,
+   "page": 12,
+   "pages": [
+    12
+   ],
+   "order": 5,
+   "q": "What is 3 \\* 4 written with an escaped asterisk?",
+   "a": "It is 3 \\* 4 = 12, and <b>this</b> stays as text.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Twelve.",
+    "example": "3 × 4 = 12",
+    "update": null,
+    "similar": []
+   }
+  },
+  {
+   "id": "pv-ev-b01",
+   "c": "ev",
+   "l": 1,
+   "lvl": "Basic",
+   "sec": "Enterprise / Equity Value",
+   "num": 1,
+   "page": 20,
+   "pages": [
+    20
+   ],
+   "order": 6,
+   "q": "What's the difference between enterprise value and equity value?",
+   "a": "Equity value belongs to shareholders. Enterprise value is the value of the operations to every capital provider.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Equity value is for shareholders; enterprise value is for everyone who funds the business.",
+    "example": "Equity 800 + debt 300 − cash 100 = enterprise value 1,000.",
+    "update": null,
+    "similar": [
+     "e1"
+    ]
+   }
+  },
+  {
+   "id": "pv-ev-a01",
+   "c": "ev",
+   "l": 3,
+   "lvl": "Advanced",
+   "sec": "Enterprise / Equity Value",
+   "num": 1,
+   "page": 21,
+   "pages": [
+    21
+   ],
+   "order": 7,
+   "q": "Should you subtract all of a company's cash when you calculate enterprise value?",
+   "a": "Usually yes, but cash the business needs to operate is arguably part of its operations.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "",
+    "example": "",
+    "update": null,
+    "similar": []
+   }
+  },
+  {
+   "id": "pv-brain-x01",
+   "c": "brain",
+   "l": 2,
+   "lvl": "",
+   "sec": "Brain Teasers",
+   "num": 1,
+   "page": 30,
+   "pages": [
+    30
+   ],
+   "order": 8,
+   "q": "A bat and a ball cost $1.10 together and the bat costs $1.00 more than the ball. How much is the ball?",
+   "a": "5 cents. If the ball is x, the bat is x + 1.00, so 2x + 1.00 = 1.10 and x = 0.05.",
+   "notes": "",
+   "flags": [],
+   "added": {
+    "simple": "Set the ball to x and solve; the instinctive 10 cents is wrong.",
+    "example": "",
+    "update": null,
+    "similar": []
+   }
+  }
+ ]
+}

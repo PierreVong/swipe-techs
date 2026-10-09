@@ -49,6 +49,10 @@
   <div class="grab"></div>
   <h2 id="topicTitle">Topic Focus</h2>
   <p class="note">Choose topics and levels. Due reviews come first, then new questions.</p>
+  <div id="topicSrc" hidden>
+    <h3>Questions from</h3>
+    <div class="chips" id="srcChips"></div>
+  </div>
   <h3>Topics</h3>
   <div class="chips roomy" id="catChips"></div>
   <h3>Level</h3>
@@ -78,8 +82,30 @@
     <button class="coll" id="collTop"><span class="coll-name">Top 100</span><span class="coll-sub" id="collTopSub">The most-asked IB technicals</span></button>
     <button class="coll" id="collBm"><span class="coll-name">Bookmarks</span><span class="coll-sub" id="collBmSub">Cards you saved</span></button>
     <button class="coll" id="collChill"><span class="coll-name">🌙 Chill saves</span><span class="coll-sub" id="collChillSub">Concepts you saved in Chill Mode</span></button>
+    <button class="coll" id="collPriv" hidden><span class="coll-name" id="collPrivName">Private collection</span><span class="coll-sub" id="collPrivSub"></span></button>
   </div>
   <div class="sheet-foot"><span></span><button class="ghost" data-close>Close</button></div>
+</section>
+
+<section class="sheet tall" id="privSheet" role="dialog" aria-modal="true" aria-labelledby="privTitle" hidden>
+  <div class="grab"></div>
+  <h2 id="privTitle">Private collection</h2>
+  <p class="note" id="privSub"></p>
+  <div id="privDash"></div>
+  <h3>Study path</h3>
+  <div class="paths" id="privPaths"></div>
+  <button class="link" id="privRestart" hidden>Start Sequential over from the first question</button>
+  <h3>Sections</h3>
+  <div class="chips roomy" id="privCats"></div>
+  <h3>Difficulty</h3>
+  <div class="chips" id="privLvls"></div>
+  <h3>Mastery by section</h3>
+  <div class="mastery" id="privByCat"></div>
+  <p class="note">Mastered means nailed on 3 separate days, the same rule as the rest of the app. Tap a section to pick it.</p>
+  <div class="sheet-foot topic-foot sticky">
+    <div class="tsum"><b id="privSel"></b><span class="count" id="privCount"></span></div>
+    <button class="primary" id="privStart">Start</button>
+  </div>
 </section>
 
 <section class="sheet tall" id="progSheet" role="dialog" aria-modal="true" aria-labelledby="progTitle" hidden>
@@ -95,6 +121,9 @@
 <section class="sheet" id="setSheet" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
   <div class="grab"></div>
   <h2 id="setTitle">Settings</h2>
+  <h3>Private collection</h3>
+  <div id="privBox"></div>
+  <input type="file" id="privFile" accept=".json,application/json" hidden>
   <h3>Appearance</h3>
   <div class="chips" id="themeChips"></div>
   <h3>Interview timer</h3>
@@ -108,6 +137,7 @@
       <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Didn't know / Partially / Nailed it (or pick a quiz option 1–4)</td></tr>
       <tr><td><kbd>↓</kbd> <kbd>J</kbd> · <kbd>↑</kbd> <kbd>K</kbd></td><td>Next / previous card</td></tr>
       <tr><td><kbd>E</kbd> · <kbd>X</kbd> · <kbd>D</kbd></td><td>Explanation · Example · Go deeper</td></tr>
+      <tr><td><kbd>O</kbd> <kbd>E</kbd> <kbd>X</kbd> <kbd>U</kbd></td><td>Private cards: Original · Simplified · Example · Updated</td></tr>
       <tr><td><kbd>Enter</kbd></td><td>Type a number (Interview)</td></tr>
       <tr><td><kbd>B</kbd></td><td>Bookmark</td></tr>
       <tr><td><kbd>L</kbd> · <kbd>T</kbd></td><td>Chill: Learn more · Test me</td></tr>
@@ -124,6 +154,7 @@
 
 <script src="js/srs.js"></script>
 <script src="js/chill.js"></script>
+<script src="js/private.js"></script>
 <script src="data/helpers.js"></script>
 <script src="data/accounting.js"></script>
 <script src="data/ev.js"></script>
