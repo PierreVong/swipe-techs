@@ -505,3 +505,50 @@ table.grid tr > :last-child { border-right: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Chill diagrams (data/helpers.js: WF, BARS, SPLIT, FLOW, VS). Bars use the card's topic colour. */
+.cex.visual { padding-bottom: 12px; }
+.viz { font-size: 13.5px; line-height: 1.3; }
+.viz.wf, .viz.bars { display: grid; gap: 6px; }
+.viz .wr { display: grid; grid-template-columns: minmax(64px, 34%) 1fr auto; align-items: center; gap: 8px; }
+.viz .wl { color: color-mix(in srgb, var(--ink) 85%, var(--muted)); overflow-wrap: anywhere; }
+.viz .wt { position: relative; height: 14px; border-radius: 4px; background: color-mix(in srgb, var(--line) 45%, transparent); }
+.viz .wt i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; background: var(--topic); opacity: .9; }
+.viz .wv { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); text-align: right; white-space: nowrap; }
+.viz.wf .sub .wt i { background: var(--bad); opacity: .75; }
+.viz.wf .base .wt i { opacity: .55; }
+.viz.wf .total .wl, .viz.wf .total .wv, .viz.bars .hi .wl, .viz.bars .hi .wv { font-weight: 700; color: var(--ink); }
+.viz.wf .total { border-top: 1px dashed var(--line); padding-top: 6px; }
+.viz.bars .wr:not(.hi) .wt i { opacity: .45; }
+.viz.bars .hi .wt i { opacity: 1; }
+.viz.split .sb { display: flex; height: 18px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.viz.split .sl { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; color: color-mix(in srgb, var(--ink) 85%, var(--muted)); }
+.viz.split .sl span { display: inline-flex; align-items: center; gap: 6px; }
+.viz.split .sl em { font-style: normal; font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+.viz.split .sl b { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.viz .s0 { background: var(--topic); }
+.viz .s1 { background: color-mix(in srgb, var(--topic) 55%, var(--card)); }
+.viz .s2 { background: color-mix(in srgb, var(--topic) 28%, var(--card)); }
+.viz .s3 { background: color-mix(in srgb, var(--muted) 45%, var(--card)); }
+.viz.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; }
+.viz.flow .st { display: inline-flex; flex-direction: column; border: 1px solid color-mix(in srgb, var(--topic) 40%, var(--line)); background: color-mix(in srgb, var(--topic) 9%, var(--card)); border-radius: 9px; padding: 4px 9px; font-weight: 600; color: var(--ink); }
+.viz.flow .st small { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.viz.flow .ar { color: var(--topic); font-weight: 700; }
+.viz.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.viz.vs .vc { border-radius: 10px; padding: 8px 10px; background: color-mix(in srgb, var(--topic) 7%, var(--card)); }
+.viz.vs .vc + .vc { background: color-mix(in srgb, var(--muted) 10%, var(--card)); }
+.viz.vs .vt { font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.viz.vs p { margin: 2px 0 0; color: color-mix(in srgb, var(--ink) 85%, var(--muted)); }
+
+/* Chill: a calmer header (Chill never counts toward the goal or streak), Rabbit hole and More like this. */
+body.in-chill #goalBtn, body.in-chill #streak { display: none; }
+.chill-card { touch-action: manipulation; }   /* double tap = More like this, never zoom */
+.more-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.rh-btn, .like-btn { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 0 14px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--topic) 35%, var(--line)); background: color-mix(in srgb, var(--topic) 8%, var(--raise)); color: var(--ink); font-weight: 600; font-size: 14.5px; }
+.rh-btn small { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.like-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--topic) 24%, var(--raise)); border-color: var(--topic); }
+.badge.rh { color: var(--ink); background: color-mix(in srgb, var(--topic) 22%, var(--raise)); }
+.likepop { position: absolute; left: 50%; top: 42%; font-size: 64px; transform: translate(-50%, -50%) scale(.4); opacity: 0; pointer-events: none; animation: likepop .85s ease-out forwards; z-index: 2; }
+@keyframes likepop { 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 60% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .likepop { animation-duration: .01s; } }
+.viz.bars .neg .wt i { background: var(--bad); }
