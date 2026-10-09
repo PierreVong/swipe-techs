@@ -1,14 +1,22 @@
-/* Swipe Techs UI: feed, card flow, modes, collections, dashboard. Depends on js/srs.js, js/chill.js and data/*.js. */
-(function () {
+/* Swipe Techs UI: feed, card flow, modes, collections, dashboard. Depends on js/srs.js, js/chill.js, js/private.js and data/*.js. */
+(async function () {
   "use strict";
   const S = window.SRS;
+  const P = window.PRIV;
   const BANK = window.QB;
-  const byId = Object.fromEntries(BANK.map(q => [q.id, q]));
+  // A private collection imported on this device (Settings), kept apart from the built-in bank: own ids, own progress section.
+  const priv = await P.ready;
+  const PCOLL = priv.coll;
+  const PBANK = PCOLL ? P.toCards(PCOLL) : [];
+  const SIM = P.simMap(PBANK);
+  const byId = Object.fromEntries(BANK.concat(PBANK).map(q => [q.id, q]));
   const CATS = {
     acct: { name: "Accounting" }, ev: { name: "EV & Equity Value", short: "EV & Equity" },
     val: { name: "Valuation" }, dcf: { name: "DCF" }, ma: { name: "M&A" }, lbo: { name: "LBO" },
     model: { name: "Financial Modeling", short: "Modeling" }, math: { name: "Mental Math" },
   };
+  const CORE_CATS = Object.keys(CATS);
+  if (PBANK.some(q => q.c === "brain")) CATS.brain = { name: "Brain Teasers", short: "Brain teasers" };
   const LEVELS = { 1: "Beginner", 2: "Intermediate", 3: "Advanced" };
   const KINDS = { concept: "Concept", math: "Numbers", "3s": "3-Statement" };
   const RATES = ["Didn't know", "Partially", "Nailed it"];
@@ -37,7 +45,25 @@
   // Stable order for new cards: Top 100 first, easier first, otherwise shuffled (same order every visit).
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
   const ORDER = {};
-  BANK.slice().sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || a.l - b.l || hash(a.id) - hash(b.id)).forEach((q, i) => { ORDER[q.id] = i; });
+  BANK.slice().sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || a.l - b.l || hash(a.id) - hash(b.id)).forEach((q, i) => { ORDER[q.id] = i / BANK.length; });
+  // Private questions keep the guide's order, spread evenly among the built-in ones when both are on.
+  PBANK.forEach((q, i) => { ORDER[q.id] = (i + 0.5) / PBANK.length; });
+
+  // Question source: built-in (core), the private collection (priv) or both.
+  const src = () => PBANK.length && (st.prefs.src === "priv" || st.prefs.src === "both") ? st.prefs.src : "core";
+  const pool = (s = src()) => s === "priv" ? PBANK : s === "both" ? BANK.concat(PBANK) : BANK;
+  const srcName = s => s === "priv" ? PCOLL.name : s === "both" ? `Swipe Techs + ${PCOLL.short}` : "Swipe Techs";
+  const PATH_NAMES = { seq: "Sequential", shuffle: "Shuffle", srs: "Spaced repetition" };
+  function privPrefs() {
+    const p = st.prefs.priv && typeof st.prefs.priv === "object" ? st.prefs.priv : (st.prefs.priv = {});
+    if (!P.PATHS.includes(p.path)) p.path = "seq";
+    if (!Array.isArray(p.cats)) p.cats = [];
+    if (!Array.isArray(p.lvls) || !p.lvls.length) p.lvls = [1, 3];
+    if (!p.cur || typeof p.cur !== "object") p.cur = {};
+    return p;
+  }
+  const secName = q => `${CATS[q.c].short || CATS[q.c].name}${q.lvl && q.c !== "brain" ? " " + q.lvl : ""}`;
+  const pageRef = q => q.pages.length > 1 ? `pp. ${q.pages[0]}–${q.pages[q.pages.length - 1]}` : q.page ? `p. ${q.page}` : "";
 
   const ICON_BM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
   const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
@@ -86,7 +112,7 @@
 
   // ---------- session ----------
   const feed = $("#feed");
-  let mode = ["foryou", "topic", "weak", "top100", "bookmarks", "chill"].includes(st.prefs.mode) ? st.prefs.mode : "foryou";
+  let mode = ["foryou", "topic", "weak", "top100", "bookmarks", "chill"].includes(st.prefs.mode) || (st.prefs.mode === "priv" && PBANK.length) ? st.prefs.mode : "foryou";
   let slides = [];        // {kind:"card"|"chill"|"end"|"summary", id, seq, el, state, suggest, rating, t0, ms}
   let cur = 0;
   let ended = false;
@@ -96,24 +122,43 @@
   let chillSession = [];  // concepts shown since the app opened, so a session doesn't repeat itself
   let drill = null;       // {ids, next}: "Test me" from a Chill card
   let dwell = null, curEl = null;
+  let privShuffle = null; // this session's shuffled order for the private collection
 
   function candidates() {
     const p = st.prefs;
-    if (mode === "topic") return BANK.filter(q => (!p.cats.length || p.cats.includes(q.c)) && p.lvls.includes(q.l)).map(q => q.id);
+    if (mode === "topic") return pool().filter(q => inTopic(p, q)).map(q => q.id);
     if (mode === "bookmarks") return st.bookmarks.filter(id => byId[id]);
     if (mode === "top100") return BANK.filter(q => q.top).map(q => q.id);
-    return BANK.map(q => q.id);
+    return pool().map(q => q.id);
   }
 
   function nextCardId() {
     if (mode === "interview") return interview.next < interview.ids.length ? interview.ids[interview.next++] : null;
     if (mode === "drill") return drill.next < drill.ids.length ? drill.ids[drill.next++] : null;
     const pending = new Set(slides.slice(cur).filter(s => s.kind === "card" && s.state !== "rated").map(s => s.id));
-    return S.pickNext(st, candidates(), {
-      pos: st.seq, now: Date.now(), order: ORDER, exclude: pending,
-      recent: slides.filter(s => s.kind === "card").slice(-6).map(s => s.id),
-      mode: mode === "weak" ? "weak" : "foryou",
-    });
+    const recent = slides.filter(s => s.kind === "card").slice(-6).map(s => s.id);
+    if (mode === "priv") return nextPriv(pending, recent);
+    let ids = candidates();
+    // Near-identical questions from the two banks never come back to back.
+    if (PBANK.length) { const b = P.blocked(SIM, recent.slice(-3)); const ok = ids.filter(id => !b.has(id)); if (ok.length) ids = ok; }
+    return S.pickNext(st, ids, { pos: st.seq, now: Date.now(), order: ORDER, exclude: pending, recent, mode: mode === "weak" ? "weak" : "foryou" });
+  }
+
+  // Private collection paths: Sequential (guide order, resumes where you stopped), Shuffle, or Spaced repetition.
+  const privIds = () => { const f = privPrefs(); return PBANK.filter(q => P.inFilter(q, f)).map(q => q.id); };
+  function nextPriv(pending, recent) {
+    const f = privPrefs(), ids = privIds();
+    if (!ids.length) return null;
+    if (f.path === "srs") return S.pickNext(st, ids, { pos: st.seq, now: Date.now(), order: ORDER, exclude: pending, recent, mode: "foryou" });
+    // Sequential and Shuffle still bring a missed question back a few cards later.
+    const justSeen = new Set(recent.slice(-2));
+    const learn = ids.filter(id => { const c = S.get(st, id); return c && c.dueN != null && c.dueN <= st.seq && !justSeen.has(id) && !pending.has(id); })
+      .sort((a, b) => S.get(st, a).dueN - S.get(st, b).dueN);
+    if (learn.length) return learn[0];
+    const taken = new Set(slides.filter(s => s.kind === "card").map(s => s.id));
+    if (f.path === "seq") return P.seqNext(ids.map(id => byId[id]), f.cur, taken);
+    if (!privShuffle) privShuffle = shuffle(ids.slice());
+    return privShuffle.find(id => !taken.has(id)) || null;
   }
 
   function chillIds() {
@@ -165,6 +210,16 @@
       <p class="think">Your answer counts toward your normal study progress.</p>
       <div class="rowbtns"><button class="primary" data-act="chill">Back to Chill 🌙</button><button class="ghost" data-act="foryou">Keep studying</button></div>
     </div></article>`;
+    if (mode === "priv") {
+      const f = privPrefs(), n = privIds().length;
+      const msg = !n ? ["No questions match.", "Pick at least one section on the collection page."]
+        : f.path === "seq" ? ["You've reached the end of this selection.", "Start over from the first question, or switch to Spaced repetition to review what's due."]
+          : ["That's every question in this shuffle.", "Shuffle again, or switch to Spaced repetition to review what's due."];
+      return `<article class="card panel" style="--topic: var(--accent)"><div class="card-scroll" style="justify-content:center">
+      <h2 class="q">${msg[0]}</h2><p class="think">${msg[1]}</p>
+      <div class="rowbtns">${n ? `<button class="primary" data-act="priv-again">${f.path === "seq" ? "Start over" : "Shuffle again"}</button>` : ""}<button class="ghost" data-act="priv">Collection page</button></div>
+    </div></article>`;
+    }
     const msg = {
       weak: ["Nothing to review right now.", "Cards you rate Didn't know or Partially show up here until you nail them consistently."],
       bookmarks: ["No bookmarks yet.", "Tap the bookmark on any card to save it to this collection."],
@@ -212,10 +267,12 @@
       </form>`;
     } else if (s.style === "talk") body = `<p class="think">${ICON_MIC}<span>Answer out loud as if you're in the room, then reveal.</span></p>`;
     else body = `<p class="think">Answer in your head, then tap to check.</p>`;
-    const kind = q.k !== "concept" ? `<span class="dot">·</span><span>${KINDS[q.k]}</span>` : "";
-    el.innerHTML = `<article class="card ask ${size}" style="--topic: var(--t-${q.c})" aria-label="${esc(CATS[q.c].name)} question">
+    const kind = q.src === "priv" ? `<span class="dot">·</span><span class="srctag">${esc(PCOLL.short)} #${q.num}${q.page ? " · p." + q.page : ""}</span>`
+      : q.k !== "concept" ? `<span class="dot">·</span><span>${KINDS[q.k]}</span>` : "";
+    const lvl = q.src === "priv" ? esc(q.lvl || "Brain teaser") : LEVELS[q.l];
+    el.innerHTML = `<article class="card ask ${size}${q.src === "priv" ? " pv" : ""}" style="--topic: var(--t-${q.c})" aria-label="${esc(CATS[q.c].name)} question">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[q.c].name)}</span><span class="dot">·</span><span>${LEVELS[q.l]}</span>${kind}${badgesFor(q)}</div>
+        <div class="meta"><span class="cat">${esc(CATS[q.c].name)}</span><span class="dot">·</span><span>${lvl}</span>${kind}${badgesFor(q)}</div>
         <button class="bm" aria-pressed="${bm}" aria-label="Bookmark this card" title="Bookmark">${ICON_BM}</button>
       </div>
       <div class="card-scroll">
@@ -312,7 +369,34 @@
   }
   const fuHTML = (f, extra) => `<div class="fu${extra ? " " + extra : ""}">${extra ? '<div class="lbl">Likely follow-up</div>' : ""}<p class="fq">${esc(f[0])}</p>${extra ? '<p class="think">Answer it out loud first.</p>' : ""}<button class="fu-show" aria-expanded="false">Show answer</button><div class="prose fa" hidden>${f[1]}</div></div>`;
 
+  // Private cards: the original answer word for word, with anything written for Swipe Techs in separate, labelled tabs.
+  function privAnswerHTML(q) {
+    const ad = q.added;
+    const tabs = [["orig", "Original"]];
+    if (ad.simple) tabs.push(["simple", "Simplified"]);
+    if (ad.example) tabs.push(["example", "Example"]);
+    if (ad.update) tabs.push(["update", "Updated"]);
+    const pane = (k, title, inner) => `<div class="apane" data-pane="${k}" hidden><div class="added"><div class="lbl">${title}<span class="newtag">Written for Swipe Techs</span></div>${inner}</div></div>`;
+    let h = "";
+    if (ad.update) h += `<button class="upd-flag" data-tab="update"><span aria-hidden="true">⚑</span> Updated explanation available</button>`;
+    if (tabs.length > 1) h += `<div class="atabs" role="tablist" aria-label="Answer versions">${tabs.map(([k, t], i) => `<button role="tab" class="atab${k === "update" ? " upd" : ""}" data-tab="${k}" aria-selected="${i === 0}">${t}</button>`).join("")}</div>`;
+    h += `<div class="apane" data-pane="orig"><div class="orig"><div class="lbl">Original answer · ${esc(PCOLL.short)}${pageRef(q) ? " " + pageRef(q) : ""}</div><div class="prose srctext">${P.rich(q.a) || "<p><em>No answer text was extracted for this question.</em></p>"}</div>${q.notes ? `<p class="anote">${esc(q.notes)}</p>` : ""}</div></div>`;
+    if (ad.simple) h += pane("simple", "Simplified explanation", `<div class="prose">${P.rich(ad.simple)}</div>`);
+    if (ad.example) h += pane("example", "Numerical example", `<div class="prose">${P.rich(ad.example)}</div>`);
+    if (ad.update) h += pane("update", "Updated explanation", `${ad.update.why ? `<p class="why"><b>Why:</b> ${P.inline(ad.update.why)}</p>` : ""}<div class="prose">${P.rich(ad.update.text)}</div><p class="anote">The original answer is unchanged under Original.</p>`);
+    return h;
+  }
+  function selTab(s, k) {
+    const t = s.el.querySelector(`.atab[data-tab="${k}"]`);
+    if (!t) return;
+    s.el.querySelectorAll(".atab").forEach(b => b.setAttribute("aria-selected", b === t));
+    s.el.querySelectorAll(".apane").forEach(p => { p.hidden = p.dataset.pane !== k; });
+    const sc = s.el.querySelector(".card-scroll"), bar = s.el.querySelector(".atabs");
+    if (bar.offsetTop - sc.offsetTop < sc.scrollTop) sc.scrollTo({ top: bar.offsetTop - sc.offsetTop - 8, behavior: reduced() ? "auto" : "smooth" });
+  }
+
   function answerHTML(q, s) {
+    if (q.src === "priv") return privAnswerHTML(q);
     let h = "";
     if (s.style === "mc" && s.pick != null) h += `<div class="verdict ${s.pick === q.a ? "ok" : "no"}">${s.pick === q.a ? "Correct" : "Not quite"}</div>`;
     if (s.style === "num") {
@@ -423,6 +507,7 @@
     record(s, r);
     s.undo = null;
     s.state = "rated"; s.rating = r;
+    if (mode === "priv" && privPrefs().path === "seq") { P.advance(privPrefs().cur, byId[s.id]); persist(); }   // Sequential resumes after the last question rated
     s.el.querySelector(".card").classList.add("rated");
     // Confirmation in place: the chosen button fills and says when the card is back; the others fade.
     s.el.querySelectorAll(".rate").forEach(b => {
@@ -484,6 +569,7 @@
     if (t.closest(".reveal-btn")) return reveal(s);
     const r = t.closest(".rate"); if (r) return rate(s, +r.dataset.r, true);
     const lt = t.closest(".layer-toggle"); if (lt) return toggleLayer(s, lt.dataset.layer);
+    const at = t.closest("[data-tab]"); if (at) return selTab(s, at.dataset.tab);
     if (t.closest(".deeper")) return toggleDeeper(s);
     if (t.closest(".timer")) return toggleTimer();
     if (t.closest(".sign")) return flipSign(s);
@@ -549,6 +635,7 @@
     if (mode !== "interview" && mode !== "drill") { st.prefs.mode = mode; persist(); }
     if (mode !== "chill") chillSaved = false;
     if (mode !== "drill") drill = null;
+    privShuffle = null;
     applyTheme();
     ensureAhead();
     feed.scrollTop = 0;
@@ -568,12 +655,15 @@
   function startInterview() {
     // 12 mixed questions: every category once, then extra picks from the six core technical areas; mostly intermediate/advanced.
     const pools = {};
-    BANK.forEach(q => { if (q.l === 1 && Math.random() < 0.65) return; (pools[q.c] = pools[q.c] || []).push(q.id); });
+    pool().forEach(q => { if (q.l === 1 && Math.random() < 0.65) return; (pools[q.c] = pools[q.c] || []).push(q.id); });
     Object.values(pools).forEach(shuffle);
     const core = shuffle(["acct", "ev", "val", "dcf", "ma", "lbo"]);
-    const order = [...core, ...shuffle(["model", "math"]), ...core];
+    const order = [...core, ...shuffle(Object.keys(pools).filter(c => !core.includes(c))), ...core];
     const ids = [];
-    for (const c of order) { if (ids.length >= INTERVIEW_N) break; const p = pools[c]; if (p && p.length) ids.push(p.pop()); }
+    // Skip a question too similar to one already picked (built-in vs private).
+    const take = p => { const b = P.blocked(SIM, ids); for (let i = p.length - 1; i >= 0; i--) if (!b.has(p[i])) return ids.push(p.splice(i, 1)[0]); };
+    for (const c of order) { if (ids.length >= INTERVIEW_N) break; const p = pools[c]; if (p && p.length) take(p); }
+    for (let c; ids.length < INTERVIEW_N && (c = Object.keys(pools).find(k => pools[k].length));) { const n = ids.length; take(pools[c]); if (ids.length === n) pools[c] = []; }   // small selections
     mode = "interview";
     interview = { ids: shuffle(ids), next: 0, results: {}, saved: false, start: Date.now() };
     rebuild();
@@ -610,6 +700,11 @@
   function panelAction(a) {
     if (a === "foryou") return setMode("foryou");
     if (a === "chill") return setMode("chill");
+    if (a === "priv") return openSheet("privSheet");
+    if (a === "priv-again") {
+      if (privPrefs().path === "seq") { P.restart(privPrefs().cur, privIds().map(id => byId[id])); persist(); }
+      return rebuild();
+    }
     if (a === "topic") return openSheet("topicSheet");
     if (a === "interview") return startInterview();
     if (a === "bm-misses") {
@@ -637,21 +732,28 @@
   }
 
   function updateTabs() {
-    const m = mode === "top100" || mode === "bookmarks" ? null : mode === "drill" ? "chill" : mode;   // Test me is part of Chill
+    const m = mode === "top100" || mode === "bookmarks" || mode === "priv" ? null : mode === "drill" ? "chill" : mode;   // Test me is part of Chill
     document.querySelectorAll(".tab").forEach(t => { if (t.dataset.mode === m) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
   }
 
   function updateCtx() {
     const ctx = $("#ctx"), label = $("#ctxLabel"), btn = $("#ctxBtn");
     let text = "", b = "Exit";
-    if (mode === "topic") {
+    const from = src() === "core" ? "" : ` · ${srcName(src())}`;
+    if (mode === "foryou" && from) {
+      text = `For You${from}`; b = "Change";
+    } else if (mode === "topic") {
       const p = st.prefs;
-      const cats = p.cats.length && p.cats.length < 8 ? p.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "All categories";
-      const lv = p.lvls.length === 3 ? "" : " · " + p.lvls.map(l => LEVELS[l]).join(", ");
-      text = `Topic Focus · ${cats}${lv}`; b = "Change";
+      const nCats = new Set(pool().map(q => q.c)).size;
+      const cats = p.cats.length && p.cats.length < nCats ? p.cats.filter(c => CATS[c]).map(c => CATS[c].short || CATS[c].name).join(", ") : "All categories";
+      const lv = p.lvls.length === 3 || (src() === "priv" && p.lvls.includes(1) && p.lvls.includes(3)) ? "" : " · " + p.lvls.map(l => lvlName(l, src())).filter(Boolean).join(", ");
+      text = `Topic Focus${from} · ${cats}${lv}`; b = "Change";
     } else if (mode === "weak") {
-      const n = BANK.filter(q => S.isWeak(S.get(st, q.id))).length;
-      text = `Review · ${n} weak question${n === 1 ? "" : "s"} to fix`;
+      const n = pool().filter(q => S.isWeak(S.get(st, q.id))).length;
+      text = `Review${from} · ${n} weak question${n === 1 ? "" : "s"} to fix`;
+    } else if (mode === "priv") {
+      const s = slides[cur], q = s && s.kind === "card" ? byId[s.id] : null;
+      text = `${PCOLL.short} · ${PATH_NAMES[privPrefs().path]}${q && q.src === "priv" ? ` · ${secName(q)} Q${q.num}` : ""}`; b = "Change";
     } else if (mode === "interview") {
       const s = slides[cur];
       const n = s && s.kind === "card" ? interview.ids.indexOf(s.id) + 1 : interview.ids.length;
@@ -660,7 +762,7 @@
       const m = BANK.filter(q => q.top && S.isMastered(S.get(st, q.id))).length;
       text = `Top 100 · ${m} mastered`;
     } else if (mode === "bookmarks") {
-      text = `Bookmarks · ${st.bookmarks.length} saved`;
+      text = `Bookmarks · ${st.bookmarks.filter(id => byId[id]).length} saved`;
     } else if (mode === "chill") {
       const sel = chillSaved ? "Saved concepts" : ch.cats.length ? ch.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "Mixed feed";
       text = `🌙 Chill · ${sel}`; b = chillSaved ? "Exit" : "Topics";
@@ -674,6 +776,8 @@
   }
   $("#ctxBtn").addEventListener("click", () => {
     if (mode === "topic") openSheet("topicSheet");
+    else if (mode === "priv") openSheet("privSheet");
+    else if (mode === "foryou") openSheet("setSheet");
     else if (mode === "chill" && !chillSaved) openSheet("chillSheet");
     else if (mode === "chill" || mode === "drill") setMode("chill");
     else setMode("foryou");
@@ -698,6 +802,7 @@
     if (id === "progSheet") drawDash();
     if (id === "setSheet") drawSettings();
     if (id === "chillSheet") { chillDraft = ch.cats.slice(); drawChillTopics(); }
+    if (id === "privSheet") { privDraft = null; drawPriv(); }
     const el = document.getElementById(id);
     el.hidden = false; shade.hidden = false; openId = id;
     el.scrollTop = 0;
@@ -721,33 +826,49 @@
   }
 
   // Topic Focus picker works on a draft so closing without Start changes nothing. No categories picked = all of them.
+  // Brain teasers have no level, so level filters never hide them.
   let draft = null;
-  const inTopic = (d, q) => (!d.cats.length || d.cats.includes(q.c)) && d.lvls.includes(q.l);
+  const inTopic = (d, q) => (!d.cats.length || d.cats.includes(q.c)) && (q.c === "brain" || d.lvls.includes(q.l));
+  // A private guide's own level names (Basic / Advanced) when studying it alone.
+  const lvlName = (l, s) => s === "priv" ? ({ 1: "Basic", 3: "Advanced" })[l] : LEVELS[l];
+  function srcChips(el, cur, onPick) {
+    el.innerHTML = "";
+    ["core", "priv", "both"].forEach(k => el.append(chip(k === "both" ? "Both" : srcName(k), cur === k, () => onPick(k))));
+  }
   function drawTopic() {
-    if (!draft) draft = { cats: st.prefs.cats.slice(), lvls: st.prefs.lvls.slice() };
+    if (!draft) draft = { cats: st.prefs.cats.slice(), lvls: st.prefs.lvls.slice(), src: src() };
+    $("#topicSrc").hidden = !PBANK.length;
+    if (PBANK.length) srcChips($("#srcChips"), draft.src, k => { draft.src = k; drawTopic(); });
+    const all = pool(draft.src);
+    const cats = Object.keys(CATS).filter(k => all.some(q => q.c === k));
+    draft.cats = draft.cats.filter(k => cats.includes(k));
     const cc = $("#catChips"); cc.innerHTML = "";
     cc.append(chip("All topics", !draft.cats.length, () => { draft.cats = []; drawTopic(); }));
-    Object.keys(CATS).forEach(k => cc.append(chip(CATS[k].name, draft.cats.includes(k), () => {
+    cats.forEach(k => cc.append(chip(CATS[k].name, draft.cats.includes(k), () => {
       draft.cats = draft.cats.includes(k) ? draft.cats.filter(x => x !== k) : [...draft.cats, k];
-      if (draft.cats.length === Object.keys(CATS).length) draft.cats = [];
+      if (draft.cats.length === cats.length) draft.cats = [];
       drawTopic();
     }, `--t-${k}`)));
     const lc = $("#lvlChips"); lc.innerHTML = "";
-    [1, 2, 3].forEach(l => lc.append(chip(LEVELS[l], draft.lvls.includes(l), () => {
+    const lvls = draft.src === "priv" ? [1, 3] : [1, 2, 3];
+    lvls.forEach(l => lc.append(chip(lvlName(l, draft.src), draft.lvls.includes(l), () => {
       draft.lvls = draft.lvls.includes(l) ? draft.lvls.filter(x => x !== l) : [...draft.lvls, l].sort(); drawTopic();
     })));
     const now = Date.now();
-    const pool = BANK.filter(q => inTopic(draft, q));
-    const due = pool.filter(q => { const c = S.get(st, q.id); return c && (c.dueN != null || (c.dueT != null && c.dueT <= now)); }).length;
-    const fresh = pool.filter(q => !S.isSeen(S.get(st, q.id))).length;
-    const cats = draft.cats.length ? draft.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "All topics";
-    const lv = !draft.lvls.length ? "pick a level" : draft.lvls.length === 3 ? "all levels" : draft.lvls.map(l => LEVELS[l]).join(", ");
-    $("#topicSel").textContent = `${cats} · ${lv}`;
-    $("#topicCount").textContent = pool.length ? `${pool.length} questions · ${due} due · ${fresh} new` : "No questions match";
-    $("#topicStart").disabled = !pool.length;
+    const sel = all.filter(q => inTopic(draft, q));
+    const due = sel.filter(q => { const c = S.get(st, q.id); return c && (c.dueN != null || (c.dueT != null && c.dueT <= now)); }).length;
+    const fresh = sel.filter(q => !S.isSeen(S.get(st, q.id))).length;
+    const catTxt = draft.cats.length ? draft.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "All topics";
+    const shown = draft.lvls.filter(l => lvls.includes(l));
+    const lv = !shown.length ? "pick a level" : shown.length === lvls.length ? "all levels" : shown.map(l => lvlName(l, draft.src)).join(", ");
+    $("#topicSel").textContent = `${catTxt} · ${lv}`;
+    $("#topicCount").textContent = sel.length ? `${sel.length} questions · ${due} due · ${fresh} new` : "No questions match";
+    $("#topicStart").disabled = !sel.length;
   }
   $("#topicStart").addEventListener("click", () => {
-    st.prefs.cats = draft.cats; st.prefs.lvls = draft.lvls.length ? draft.lvls : [1, 2, 3]; draft = null;
+    st.prefs.cats = draft.cats; st.prefs.lvls = draft.lvls.length ? draft.lvls : [1, 2, 3];
+    if (PBANK.length) st.prefs.src = draft.src;
+    draft = null;
     closeSheet(); mode = "topic"; interview = null; rebuild();
   });
 
@@ -755,10 +876,18 @@
     const topM = BANK.filter(q => q.top && S.isMastered(S.get(st, q.id))).length;
     const topS = BANK.filter(q => q.top && S.isSeen(S.get(st, q.id))).length;
     $("#collTopSub").textContent = `The most-asked IB technicals · ${topS} studied, ${topM} mastered`;
-    $("#collBmSub").textContent = st.bookmarks.length ? `${st.bookmarks.length} saved card${st.bookmarks.length > 1 ? "s" : ""}` : "Tap the bookmark on any card to save it";
+    const nb = st.bookmarks.filter(id => byId[id]).length;
+    $("#collBmSub").textContent = nb ? `${nb} saved card${nb > 1 ? "s" : ""}` : "Tap the bookmark on any card to save it";
     const n = ch.bm.filter(id => chillById[id]).length;
     $("#collChillSub").textContent = n ? `${n} saved concept${n > 1 ? "s" : ""} to scroll back through` : "Save a Chill card to find it here";
+    $("#collPriv").hidden = !PBANK.length;
+    if (PBANK.length) {
+      const x = S.stats(st, PBANK, Date.now());
+      $("#collPrivName").textContent = PCOLL.name;
+      $("#collPrivSub").textContent = `Private · ${x.studied} of ${x.total} reviewed, ${x.mastered} mastered`;
+    }
   }
+  $("#collPriv").addEventListener("click", () => openSheet("privSheet"));
   $("#collTop").addEventListener("click", () => { closeSheet(); mode = "top100"; interview = null; rebuild(); });
   $("#collBm").addEventListener("click", () => { closeSheet(); mode = "bookmarks"; interview = null; rebuild(); });
   $("#collChill").addEventListener("click", () => { closeSheet(); mode = "chill"; chillSaved = true; interview = null; rebuild(); });
@@ -783,13 +912,167 @@
     closeSheet(); mode = "chill"; chillSaved = false; interview = null; rebuild();
   });
 
+  // ---------- private collection page: progress, study path, filters ----------
+  let privDraft = null;
+  function drawPriv() {
+    if (!PBANK.length) return;
+    const f = privPrefs();
+    if (!privDraft) privDraft = { path: f.path, cats: f.cats.slice(), lvls: f.lvls.slice() };
+    const d = privDraft, now = Date.now();
+    const x = S.stats(st, PBANK, now);
+    const pct = x.total ? Math.round(100 * x.mastered / x.total) : 0;
+    $("#privTitle").textContent = PCOLL.name;
+    $("#privSub").textContent = `Private · stored on this device only · ${x.total} questions${PCOLL.source ? " from " + PCOLL.source : ""}`;
+    const cats = Object.keys(CATS).filter(k => PBANK.some(q => q.c === k));
+    $("#privDash").innerHTML = `
+      <div class="hero">
+        <div class="big-ring">${ring(x.total ? x.mastered / x.total : 0)}<div class="in"><b>${pct}%</b><span>mastered</span></div></div>
+        <div class="hero-txt">
+          <div class="hero-n"><b>${x.mastered}</b> of ${x.total} questions mastered</div>
+          <div class="stackbar" aria-hidden="true"><i class="m" style="width:${100 * x.mastered / x.total}%"></i><i class="l" style="width:${100 * (x.studied - x.mastered) / x.total}%"></i></div>
+          <p class="note">Tracked separately from your Swipe Techs mastery.</p>
+        </div>
+      </div>
+      <div class="tiles five">
+        <div class="tile"><span class="tl">Total</span><b>${x.total}</b><small>questions</small></div>
+        <div class="tile"><span class="tl">Reviewed</span><b>${x.studied}</b><small>at least once</small></div>
+        <div class="tile"><span class="tl">Mastered</span><b>${x.mastered}</b><small>${pct}%</small></div>
+        <div class="tile"><span class="tl">Remaining</span><b>${x.total - x.studied}</b><small>not reviewed yet</small></div>
+        <div class="tile"><span class="tl">Due now</span><b>${x.dueNow}</b><small>${x.weak} weak</small></div>
+      </div>`;
+    // Study path
+    const pc = $("#privPaths"); pc.innerHTML = "";
+    const sel = PBANK.filter(q => P.inFilter(q, d));
+    const nextId = P.seqNext(sel, f.cur, null);
+    const desc = {
+      seq: nextId ? `The guide in order. Next up: ${secName(byId[nextId])} Q${byId[nextId].num}.` : sel.length ? "The guide in order. You've finished this selection." : "The guide in order.",
+      shuffle: "Every question in your selection once, in random order.",
+      srs: "Due reviews and weak questions first, then new ones in guide order.",
+    };
+    P.PATHS.forEach(k => {
+      const b = document.createElement("button");
+      b.className = "path"; b.setAttribute("aria-pressed", d.path === k);
+      b.innerHTML = `<span class="pn">${PATH_NAMES[k]}</span><span class="pd">${esc(desc[k])}</span>`;
+      b.addEventListener("click", () => { d.path = k; drawPriv(); });
+      pc.append(b);
+    });
+    const started = sel.some(q => (f.cur[P.secKey(q)] || 0) > 0);
+    $("#privRestart").hidden = d.path !== "seq" || !started;
+    // Filters
+    const cc = $("#privCats"); cc.innerHTML = "";
+    cc.append(chip("All sections", !d.cats.length, () => { d.cats = []; drawPriv(); }));
+    cats.forEach(k => cc.append(chip(CATS[k].name, d.cats.includes(k), () => {
+      d.cats = d.cats.includes(k) ? d.cats.filter(c => c !== k) : [...d.cats, k];
+      if (d.cats.length === cats.length) d.cats = [];
+      drawPriv();
+    }, `--t-${k}`)));
+    const lc = $("#privLvls"); lc.innerHTML = "";
+    [[1, "Basic"], [3, "Advanced"]].forEach(([l, name]) => lc.append(chip(name, d.lvls.includes(l), () => {
+      d.lvls = d.lvls.includes(l) ? d.lvls.filter(v => v !== l) : [...d.lvls, l].sort();
+      if (!d.lvls.length) d.lvls = [1, 3].filter(v => v !== l);    // keep at least one level
+      drawPriv();
+    })));
+    // Mastery by section
+    $("#privByCat").innerHTML = cats.map(c => {
+      const qs = PBANK.filter(q => q.c === c);
+      const by = l => { const z = qs.filter(q => q.l === l); return z.length ? `${CATS[c].short || CATS[c].name} ${l === 1 ? "Basic" : "Advanced"} ${z.filter(q => S.isMastered(S.get(st, q.id))).length}/${z.length}` : ""; };
+      const b = x.byCat[c] || { total: 0, studied: 0, mastered: 0 };
+      const p = b.total ? Math.round(100 * b.mastered / b.total) : 0;
+      const split = c === "brain" ? "" : [by(1), by(3)].filter(Boolean).join(" · ") + " mastered";
+      return `<button class="mrow" data-pcat="${c}" style="--c: var(--t-${c})" aria-label="${esc(CATS[c].name)}: ${b.mastered} of ${b.total} mastered. Study this section.">
+        <span class="mname">${esc(CATS[c].name)}</span><span class="pct">${p}%</span>
+        <span class="track"><i class="m" style="width:${b.total ? 100 * b.mastered / b.total : 0}%"></i><i class="l" style="width:${b.total ? 100 * (b.studied - b.mastered) / b.total : 0}%"></i></span>
+        <span class="msub">${b.studied} of ${b.total} reviewed${split ? " · " + esc(split) : ""}</span></button>`;
+    }).join("");
+    $("#privByCat").querySelectorAll("[data-pcat]").forEach(b => b.addEventListener("click", () => { d.cats = [b.dataset.pcat]; drawPriv(); $("#privSheet").scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" }); }));
+    const due = sel.filter(q => { const c = S.get(st, q.id); return c && (c.dueN != null || (c.dueT != null && c.dueT <= now)); }).length;
+    const fresh = sel.filter(q => !S.isSeen(S.get(st, q.id))).length;
+    $("#privSel").textContent = `${PATH_NAMES[d.path]} · ${d.cats.length ? d.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "All sections"}${d.lvls.length === 1 ? (d.lvls[0] === 1 ? " · Basic" : " · Advanced") : ""}`;
+    $("#privCount").textContent = sel.length ? `${sel.length} questions · ${due} due · ${fresh} new` : "No questions match";
+    $("#privStart").disabled = !sel.length;
+  }
+  $("#privStart").addEventListener("click", () => {
+    const f = privPrefs();
+    f.path = privDraft.path; f.cats = privDraft.cats.slice(); f.lvls = privDraft.lvls.slice(); privDraft = null;
+    closeSheet(); mode = "priv"; interview = null; rebuild();
+  });
+  $("#privRestart").addEventListener("click", () => {
+    P.restart(privPrefs().cur, PBANK.filter(q => P.inFilter(q, privDraft))); persist(); drawPriv();
+    announce("Sequential starts again from the first question in this selection.");
+  });
+
   // ---------- settings ----------
   function drawSettings() {
+    drawPrivBox();
     const tc = $("#themeChips"); tc.innerHTML = "";
     [["system", "Match device"], ["light", "Light"], ["dark", "Dark"]].forEach(([k, l]) => tc.append(chip(l, st.prefs.theme === k, () => { st.prefs.theme = k; persist(); applyTheme(); drawSettings(); })));
     const tm = $("#timerChips"); tm.innerHTML = "";
     [[true, "Show timer"], [false, "Hide timer"]].forEach(([v, l]) => tm.append(chip(l, (st.prefs.timer !== false) === v, () => { if ((st.prefs.timer !== false) !== v) toggleTimer(); drawSettings(); })));
   }
+  // Private collection: import, replace, delete, and where questions come from.
+  let privMsg = null, privConfirm = false;
+  function drawPrivBox() {
+    const box = $("#privBox");
+    const msg = privMsg ? `<p class="note${privMsg.bad ? " bad" : ""}" role="status">${esc(privMsg.text)}</p>` : "";
+    if (!PBANK.length) {
+      const lost = priv.status === "missing" ? "Your private collection is no longer stored in this browser. Import the file again; your progress on it is still here."
+        : priv.status === "error" ? "This browser's storage for private collections couldn't be opened. Reload to try again." : "";
+      box.innerHTML = `<p class="note">Study a question file you made from your own copy of a guide (tools/private-import in the repo). It's stored in this browser only, never uploaded or published.</p>
+        ${lost ? `<p class="note bad">${lost}</p>` : ""}${msg}<div class="rowbtns"><button class="ghost" data-pv="import">Import question file</button></div>`;
+      return;
+    }
+    const when = PCOLL.imported ? new Date(PCOLL.imported).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+    box.innerHTML = `<div class="crow"><div>${esc(PCOLL.name)}<small>${PCOLL.count} questions${when ? " · imported " + esc(when) : ""} · this device only</small></div><button data-pv="open">Open</button></div>
+      <p class="sublbl">Questions from</p><div class="chips" id="privSrcChips"></div>
+      <p class="note">Applies to For You, Topics, Review and Interview. Your Swipe Techs mastery always counts the built-in questions only.</p>
+      ${msg}
+      ${privConfirm ? `<div class="confirm"><p>Delete ${esc(PCOLL.name)} from this device?</p><div class="rowbtns">
+          <button class="ghost" data-pv="del-keep">Delete, keep my progress</button><button class="ghost bad" data-pv="del-all">Delete with its progress</button><button class="link" data-pv="cancel">Cancel</button></div>
+          <p class="note">Keeping progress means re-importing the same file later picks up where you left off.</p></div>`
+        : `<div class="rowbtns"><button class="ghost" data-pv="import">Replace file</button><button class="link danger" data-pv="delete">Delete collection</button></div>`}`;
+    srcChips($("#privSrcChips"), src(), k => {
+      st.prefs.src = k; persist();
+      if (["foryou", "topic", "weak"].includes(mode)) rebuild(); else updateCtx();
+      drawSettings();
+    });
+  }
+  $("#privBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-pv]"); if (!b) return;
+    const a = b.dataset.pv;
+    if (a === "import") return $("#privFile").click();
+    if (a === "open") return openSheet("privSheet");
+    if (a === "delete" || a === "cancel") { privConfirm = a === "delete"; privMsg = null; return drawPrivBox(); }
+    if (a === "del-keep" || a === "del-all") return deletePriv(a === "del-all");
+  });
+  $("#privFile").addEventListener("change", async e => {
+    const inp = e.currentTarget, f = inp.files && inp.files[0];
+    inp.value = "";
+    if (!f) return;
+    const fail = text => { privMsg = { bad: true, text }; drawPrivBox(); };
+    if (f.size > 30e6) return fail("That file is too large to be a question collection.");
+    let obj;
+    try { obj = JSON.parse(await f.text()); } catch (err) { return fail("Not imported: that file isn't valid JSON. Pick the .json file the import tool wrote."); }
+    const v = P.validate(obj, new Set([...BANK.map(q => q.id), ...CBANK.map(x => x.id)]));
+    if (!v.ok) return fail("Not imported. " + v.errors.slice(0, 3).join(" ") + (v.errors.length > 3 ? ` And ${v.errors.length - 3} more problems.` : ""));
+    try { await P.save(v.coll); } catch (err) { return fail("Couldn't save it in this browser: " + (err && err.message || err)); }
+    st.prefs.mode = "priv"; persist();     // open straight into the collection
+    privMsg = { text: `Imported ${v.coll.count} questions. Opening ${v.coll.name}…` }; drawPrivBox();
+    setTimeout(() => location.reload(), 500);
+  });
+  async function deletePriv(withProgress) {
+    try { await P.remove(); } catch (err) { privMsg = { bad: true, text: "Couldn't delete it: " + (err && err.message || err) }; return drawPrivBox(); }
+    if (withProgress) {
+      const ids = new Set(PBANK.map(q => q.id));
+      ids.forEach(id => { delete st.cards[id]; });
+      st.bookmarks = st.bookmarks.filter(id => !ids.has(id));
+      delete st.prefs.priv;
+    }
+    st.prefs.src = "core";
+    if (st.prefs.mode === "priv") st.prefs.mode = "foryou";
+    persist();
+    location.reload();
+  }
+
   function applyTheme() {
     const t = mode === "chill" || mode === "drill" ? "dark" : st.prefs.theme;   // Chill, and its Test me cards, always use the night palette
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
@@ -834,7 +1117,7 @@
       </div>
       <h3>Mastery by topic</h3>
       <div class="legend"><span><i class="m"></i>Mastered</span><span><i class="l"></i>In progress</span><span><i class="n"></i>Not started</span></div>
-      <div class="mastery">${Object.keys(CATS).map(c => {
+      <div class="mastery">${CORE_CATS.map(c => {
         const b = x.byCat[c] || { total: 0, studied: 0, mastered: 0 };
         const p = b.total ? Math.round(100 * b.mastered / b.total) : 0;
         return `<button class="mrow" data-cat="${c}" style="--c: var(--t-${c})" aria-label="${esc(CATS[c].name)}: ${b.mastered} of ${b.total} mastered, ${b.studied - b.mastered} in progress. Study this topic.">
@@ -846,9 +1129,12 @@
       <h3>Weakest topics</h3>
       ${weakest.length ? `<div class="weakest">${weakest.map(w => `<div class="wrow"><div>${esc(CATS[w.cat].name)}<small>${Math.round(w.rate * 100)}% recall</small></div><button data-cat="${w.cat}">Practice</button></div>`).join("")}</div>` : `<p class="note">Review at least 5 cards in a topic to see how it compares.</p>`}
       ${last ? `<h3>Last interview</h3><p class="note">${last.pct}% · ${last.nailed} of ${last.n} nailed · ${new Date(last.t).toLocaleDateString()}</p>` : ""}
-      ${CBANK.length ? (() => { const c = CH.stats(ch, CBANK); return `<h3>Chill Mode</h3><div class="crow"><div>🌙 ${c.seen} of ${c.total} concepts seen<small>${c.saved} saved · separate from mastery</small></div><button data-go="chill">Open</button></div>`; })() : ""}`;
+      ${CBANK.length ? (() => { const c = CH.stats(ch, CBANK); return `<h3>Chill Mode</h3><div class="crow"><div>🌙 ${c.seen} of ${c.total} concepts seen<small>${c.saved} saved · separate from mastery</small></div><button data-go="chill">Open</button></div>`; })() : ""}
+      ${PBANK.length ? (() => { const p = S.stats(st, PBANK, now); return `<h3>${esc(PCOLL.name)}</h3><div class="crow"><div>${p.studied} of ${p.total} reviewed · ${p.mastered} mastered<small>${p.dueNow} due · private · separate from mastery</small></div><button data-go="priv">Open</button></div>`; })() : ""}`;
     const go = $("#dash").querySelector('[data-go="chill"]');
     if (go) go.addEventListener("click", () => { closeSheet(); setMode("chill"); });
+    const gp = $("#dash").querySelector('[data-go="priv"]');
+    if (gp) gp.addEventListener("click", () => openSheet("privSheet"));
     $("#dash").querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => {
       st.prefs.cats = [b.dataset.cat]; st.prefs.lvls = [1, 2, 3]; closeSheet(); mode = "topic"; interview = null; rebuild();
     }));
@@ -859,6 +1145,7 @@
     const b = e.currentTarget;
     if (!armed) { armed = true; b.textContent = "Tap again to erase review history (bookmarks stay)"; setTimeout(() => { armed = false; b.textContent = "Reset progress"; }, 3500); return; }
     const keep = { bookmarks: st.bookmarks, prefs: st.prefs };
+    if (st.prefs.priv) st.prefs.priv.cur = {};
     st = Object.assign(S.blankState(), keep);
     persist(); armed = false; b.textContent = "Progress reset";
     updateHeader(); rebuild();
@@ -898,6 +1185,7 @@
     }
     if (k === "b") return toggleBookmark(s);
     if (s.state === "ask") return;
+    if (q.src === "priv") { const tab = { o: "orig", e: "simple", x: "example", u: "update" }[k]; if (tab) selTab(s, tab); return; }
     if (k === "e") return toggleLayer(s, "detail");
     if (k === "x") return toggleLayer(s, "ex");
     if (k === "d") return toggleDeeper(s);
@@ -913,5 +1201,5 @@
   applyTheme();
   updateHeader();
   rebuild();
-  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: id => renderChill({ id }) };   // for tests
+  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: id => renderChill({ id }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
 })();

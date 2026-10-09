@@ -522,6 +522,246 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   });
   await ctxS.close();
 
+  // ---------- private collection ----------
+  // Uses a small synthetic file (tests/fixtures/private-sample.json), never real guide content.
+  console.log("Private collection");
+  const SAMPLE = path.join(__dirname, "fixtures", "private-sample.json");
+  const ctxP = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
+  await ctxP.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  const pP = await ctxP.newPage(); watch(pP);
+  await pP.goto(URL);
+  await pP.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+  const pApp = () => pP.evaluate(() => { const a = window.__swipe; return { mode: a.mode, cur: a.cur, priv: { status: a.priv.status, count: a.priv.count, src: a.priv.src() }, st: { cards: a.st.cards, log: a.st.log, bookmarks: a.st.bookmarks, prefs: a.st.prefs }, slides: a.slides.map(s => ({ kind: s.kind, id: s.id, state: s.state })) }; });
+  const pCur = async () => { const a = await pApp(); return { ...a.slides[a.cur], idx: a.cur, el: pP.locator(".slide").nth(a.cur) }; };
+  const pWait = idx => pP.waitForFunction(i => window.__swipe.cur === i, idx, { timeout: 4000 });
+  const pReady = () => pP.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+  const importFile = async () => {
+    await pP.locator("#settingsBtn").click();
+    await pP.locator("#setSheet").waitFor();
+    await Promise.all([pP.waitForEvent("load"), pP.setInputFiles("#privFile", SAMPLE)]);
+    await pReady();
+  };
+
+  await step("before an import the public app shows no private collection anywhere", async () => {
+    // Some built-in progress first, so deleting the collection can be checked against it.
+    await pP.evaluate(() => { const S = window.SRS, st = window.__swipe.st; S.rate(st, "a1", 2, Date.now(), 0); S.rate(st, "e1", 0, Date.now(), 0); S.save(localStorage, st); });
+    const a = await pApp();
+    assert.equal(a.priv.status, "none"); assert.equal(a.priv.count, 0);
+    assert.equal(await pP.evaluate(() => localStorage.getItem("swipetechs.private")), null);
+    await pP.locator("#collectionsBtn").click();
+    assert.ok(await pP.locator("#collPriv").isHidden());
+    await pP.keyboard.press("Escape");
+    await pP.locator('.tab[data-mode="topic"]').click();
+    assert.ok(await pP.locator("#topicSrc").isHidden());
+    await pP.keyboard.press("Escape");
+    await pP.locator("#settingsBtn").click();
+    assert.match(await pP.locator("#privBox").textContent(), /Import question file/);
+    await pP.keyboard.press("Escape");
+  });
+
+  await step("a file that isn't a collection is refused with a reason and nothing is stored", async () => {
+    await pP.locator("#settingsBtn").click();
+    await pP.setInputFiles("#privFile", { name: "notes.json", mimeType: "application/json", buffer: Buffer.from('{"hello": 1}') });
+    await pP.locator("#privBox .note.bad").waitFor();
+    assert.match(await pP.locator("#privBox .note.bad").textContent(), /Not imported/);
+    assert.equal(await pP.evaluate(() => localStorage.getItem("swipetechs.private")), null);
+    await pP.keyboard.press("Escape");
+  });
+
+  await step("importing opens the collection on its first question, in guide order", async () => {
+    await importFile();
+    const a = await pApp();
+    assert.equal(a.priv.status, "ok"); assert.equal(a.priv.count, 8);
+    assert.equal(a.mode, "priv");
+    assert.deepEqual(a.slides.slice(0, 3).map(s => s.id), ["pv-acct-b01", "pv-acct-b02", "pv-acct-b03"]);
+    assert.match(await pP.locator("#ctxLabel").textContent(), /Sample · Sequential · Accounting Basic Q1/);
+    const meta = await pP.locator(".slide").first().locator(".meta").textContent();
+    assert.match(meta, /Basic/); assert.match(meta, /Sample #1 · p\.10/);
+    await shot(pP, "private-1-question");
+  });
+
+  await step("reveal shows the original answer word for word with its page; added text sits in its own labelled tab", async () => {
+    const c = await pCur();
+    await c.el.locator(".reveal-btn").click();
+    await c.el.locator(".orig").waitFor();
+    assert.match(await c.el.locator(".orig .lbl").textContent(), /Original answer · Sample p\. 10/);
+    assert.match(await c.el.locator(".srctext").innerText(), /^The income statement shows revenue, expenses and profit over a period\./);
+    assert.equal(await c.el.locator(".srctext strong").first().textContent(), "income statement");
+    assert.deepEqual(await c.el.locator(".atab").allTextContents(), ["Original", "Simplified"]);
+    await c.el.locator('.atab[data-tab="simple"]').click();
+    assert.ok(await c.el.locator('[data-pane="simple"]').isVisible());
+    assert.ok(await c.el.locator('[data-pane="orig"]').isHidden());
+    assert.match(await c.el.locator('[data-pane="simple"] .lbl').textContent(), /Written for Swipe Techs/);
+    await pP.waitForTimeout(300);
+    await shot(pP, "private-2-simplified");
+    await c.el.locator('.rate[data-r="2"]').click();
+    await pWait(c.idx + 1);
+    const a = await pApp();
+    assert.equal(a.st.cards["pv-acct-b01"].last, 2);
+    assert.equal(a.st.prefs.priv.cur["acct:1"], 1);
+    assert.equal(await pP.locator("#goalNum").textContent(), "3", "counts toward the daily goal (2 built-in reviews seeded first)");
+  });
+
+  await step("a long answer scrolls inside the card; the rating buttons stay on screen", async () => {
+    const c = await pCur();
+    assert.equal(c.id, "pv-acct-b02");
+    await c.el.locator(".reveal-btn").click();
+    await c.el.locator(".rates").waitFor();
+    const r = await c.el.evaluate(n => { const sc = n.querySelector(".card-scroll"), f = n.querySelector(".foot").getBoundingClientRect(); return { scrolls: sc.scrollHeight > sc.clientHeight + 50, footIn: f.bottom <= innerHeight && f.top > 0, ov: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+    assert.ok(r.scrolls); assert.ok(r.footIn); assert.equal(r.ov, 0);
+    await c.el.locator('.rate[data-r="0"]').click();
+    await pWait(c.idx + 1);
+  });
+
+  await step("an outdated answer shows the indicator; the update opens beside the untouched original", async () => {
+    const c = await pCur();
+    assert.equal(c.id, "pv-acct-b03");
+    await c.el.locator(".reveal-btn").click();
+    await c.el.locator(".upd-flag").waitFor();
+    assert.match(await c.el.locator(".upd-flag").textContent(), /Updated explanation available/);
+    await c.el.locator(".upd-flag").click();
+    const upd = c.el.locator('[data-pane="update"]');
+    assert.ok(await upd.isVisible());
+    assert.match(await upd.textContent(), /Written for Swipe Techs/);
+    assert.match(await upd.textContent(), /right-of-use asset/);
+    assert.match(await upd.textContent(), /original answer is unchanged/);
+    await pP.waitForTimeout(300);
+    await shot(pP, "private-3-updated");
+    await c.el.locator('.atab[data-tab="orig"]').click();
+    assert.match(await c.el.locator(".srctext").innerText(), /^Only long leases that work like a purchase go on the balance sheet\./);
+    await c.el.locator('.rate[data-r="2"]').click();
+    await pWait(c.idx + 1);
+  });
+
+  await step("the missed question comes back a few cards later, and tables render with merged cells", async () => {
+    const seen = [];
+    for (let i = 0; i < 4; i++) {
+      const c = await pCur();
+      seen.push(c.id);
+      if (c.id === "pv-acct-a01") {
+        await c.el.locator(".reveal-btn").click();
+        await c.el.locator("table.grid").waitFor();
+        assert.equal(await c.el.locator("table.grid td[colspan='3']").count(), 1);
+        assert.equal(await pP.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), 0);
+      } else await c.el.locator(".reveal-btn").click();
+      await c.el.locator(".rates").waitFor();
+      await c.el.locator('.rate[data-r="2"]').click();
+      await pWait(c.idx + 1);
+    }
+    assert.ok(seen.includes("pv-acct-b02"), seen.join(","));
+    assert.ok(seen.includes("pv-acct-a01"), seen.join(","));
+  });
+
+  await step("progress and the place in the guide survive a reload", async () => {
+    const before = await pApp();
+    await pP.reload(); await pReady();
+    const a = await pApp();
+    assert.equal(a.mode, "priv");
+    assert.deepEqual(Object.keys(a.st.cards).sort(), Object.keys(before.st.cards).sort());
+    assert.deepEqual(a.st.prefs.priv.cur, before.st.prefs.priv.cur);
+    const next = a.slides[0].id;
+    assert.ok(!["pv-acct-b01", "pv-acct-b03"].includes(next), "doesn't restart from the top: " + next);
+  });
+
+  await step("collection page: progress by section, three study paths, filters", async () => {
+    await pP.locator("#ctxBtn").click();
+    await pP.locator("#privSheet").waitFor();
+    const tiles = await pP.locator("#privDash .tiles").textContent();
+    assert.match(tiles, /Total\s*8/); assert.match(tiles, /Reviewed\s*\d/); assert.match(tiles, /Remaining\s*\d/); assert.match(tiles, /Due now/);
+    assert.equal(await pP.locator("#privByCat .mrow").count(), 3);
+    assert.deepEqual(await pP.locator("#privPaths .pn").allTextContents(), ["Sequential", "Shuffle", "Spaced repetition"]);
+    await pP.waitForTimeout(300);
+    await shot(pP, "private-4-collection");
+    await pP.locator("#privCats .chip", { hasText: "EV & Equity" }).click();
+    await pP.locator("#privLvls .chip", { hasText: "Basic" }).click();     // Advanced only
+    assert.match(await pP.locator("#privCount").textContent(), /^1 questions?/);
+    await pP.locator("#privPaths .path", { hasText: "Shuffle" }).click();
+    await pP.locator("#privStart").click();
+    await pP.waitForFunction(() => window.__swipe.slides.length > 0);
+    const a = await pApp();
+    assert.equal(a.st.prefs.priv.path, "shuffle");
+    assert.deepEqual(a.slides.filter(s => s.kind === "card").map(s => s.id), ["pv-ev-a01"]);
+    assert.equal(a.slides[a.slides.length - 1].kind, "end");
+  });
+
+  await step("the question source switch covers For You, Topics and Review; Both keeps similar questions apart", async () => {
+    await pP.locator("#settingsBtn").click();
+    await pP.locator("#privSrcChips .chip", { hasText: "Both" }).click();
+    await pP.keyboard.press("Escape");
+    await pP.locator('.tab[data-mode="foryou"]').click();
+    await pP.waitForFunction(() => window.__swipe.mode === "foryou");
+    assert.match(await pP.locator("#ctxLabel").textContent(), /For You · Swipe Techs \+ Sample/);
+    await pP.locator('.tab[data-mode="topic"]').click();
+    assert.ok(await pP.locator("#topicSrc").isVisible());
+    assert.ok(await pP.locator("#catChips .chip", { hasText: "Brain Teasers" }).count());
+    await pP.locator("#srcChips .chip", { hasText: "Sample Guide" }).click();
+    assert.deepEqual(await pP.locator("#lvlChips .chip").allTextContents(), ["Basic", "Advanced"]);
+    assert.match(await pP.locator("#topicCount").textContent(), /^8 questions/);
+    await pP.locator("#srcChips .chip", { hasText: "Both" }).click();
+    await pP.keyboard.press("Escape");
+    // Bookmarks with a built-in question and its private near-duplicate: never shown back to back.
+    await pP.evaluate(() => { window.__swipe.st.bookmarks = ["a1", "pv-acct-b01", "a2", "a3"]; });
+    await pP.locator("#collectionsBtn").click();
+    await pP.locator("#collBm").click();
+    await pP.waitForFunction(() => window.__swipe.mode === "bookmarks");
+    const ids = (await pApp()).slides.filter(s => s.kind === "card").map(s => s.id);
+    const ia = ids.indexOf("a1"), ib = ids.indexOf("pv-acct-b01");
+    if (ia > -1 && ib > -1) assert.ok(Math.abs(ia - ib) > 1, ids.join(","));
+  });
+
+  await step("Interview works on private questions: spoken answers, original answer on reveal", async () => {
+    await pP.locator("#settingsBtn").click();
+    await pP.locator("#privSrcChips .chip", { hasText: "Sample Guide" }).click();
+    await pP.keyboard.press("Escape");
+    await pP.locator('.tab[data-mode="interview"]').click();
+    await pP.waitForFunction(() => window.__swipe.mode === "interview");
+    const a = await pApp();
+    const ids = a.slides.filter(s => s.kind === "card").map(s => s.id);
+    assert.ok(ids.length && ids.every(id => id.startsWith("pv-")), ids.join(","));
+    const c = await pCur();
+    await c.el.locator(".reveal-btn").click();
+    await c.el.locator(".orig").waitFor();
+  });
+
+  await step("Progress keeps built-in mastery separate and adds a row for the collection", async () => {
+    await pP.keyboard.press("Escape");
+    await pP.locator('.tab[data-mode="progress"]').click();
+    await pP.locator("#progSheet").waitFor();
+    assert.equal(await pP.locator("#dash .mastery .mrow").count(), 8, "built-in topics only");
+    assert.match(await pP.locator("#dash .big-ring").textContent(), /0%/);
+    assert.match(await pP.locator("#dash").textContent(), /Sample Guide/);
+    assert.match(await pP.locator("#dash").textContent(), /of 8 reviewed/);
+    await pP.keyboard.press("Escape");
+  });
+
+  await step("delete keeping progress, re-import picks up where it left off, delete with progress clears it", async () => {
+    const before = await pApp();
+    const mine = Object.keys(before.st.cards).filter(id => id.startsWith("pv-"));
+    assert.ok(mine.length >= 3);
+    await pP.locator("#settingsBtn").click();
+    await pP.locator('#privBox [data-pv="delete"]').click();
+    await Promise.all([pP.waitForEvent("load"), pP.locator('#privBox [data-pv="del-keep"]').click()]);
+    await pReady();
+    let a = await pApp();
+    assert.equal(a.priv.count, 0); assert.notEqual(a.mode, "priv"); assert.equal(a.priv.src, "core");
+    assert.deepEqual(Object.keys(a.st.cards).filter(id => id.startsWith("pv-")).sort(), mine.sort());
+    assert.ok(a.slides.every(s => !String(s.id).startsWith("pv-")));
+    await importFile();
+    a = await pApp();
+    assert.equal(a.priv.count, 8);
+    assert.equal(a.st.cards["pv-acct-b01"].last, 2, "progress kept across delete + import");
+    await pP.locator("#settingsBtn").click();
+    await pP.locator('#privBox [data-pv="delete"]').click();
+    await Promise.all([pP.waitForEvent("load"), pP.locator('#privBox [data-pv="del-all"]').click()]);
+    await pReady();
+    a = await pApp();
+    assert.equal(a.priv.status, "none");
+    assert.deepEqual(Object.keys(a.st.cards).filter(id => id.startsWith("pv-")), []);
+    assert.ok(Object.keys(a.st.cards).length > 0, "built-in progress untouched");
+    assert.equal(await pP.evaluate(() => new Promise(r => { const q = indexedDB.open("swipetechs-private"); q.onsuccess = () => { const t = q.result.transaction("collections").objectStore("collections").count(); t.onsuccess = () => r(t.result); }; })), 0);
+  });
+  await ctxP.close();
+
   // ---------- migration from v1 ----------
   console.log("Migration");
   const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });

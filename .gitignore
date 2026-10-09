@@ -1,2 +1,7 @@
 tests/shots/
 node_modules/
+# Private study material made with tools/private-import: never commit it
+private/
+*.pdf
+biws*.json
+__pycache__/
