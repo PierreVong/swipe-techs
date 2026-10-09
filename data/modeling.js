@@ -49,11 +49,11 @@ fu:[["Why can a data table slow down a model?","<p>Excel recalculates the entire
 
 {id:"f10",l:2,k:"math",q:"How do you model a $300 share buyback when the share price is $50?",
 quick:`<p>The company repurchases 300 ÷ 50 = 6 shares.</p><ul><li>Cash falls 300 (financing outflow).</li><li>Equity falls 300 (treasury stock).</li><li>The share count drops by 6, weighted for when during the year the buyback happens.</li></ul>`,
-detail:`<p>EPS rises if the earnings given up (lost interest on the cash, or new interest if debt-funded) are smaller than the share count reduction. Use a projected share price, not today's, for future years.</p>`,
+detail:`<p>EPS rises if earnings fall by a smaller percentage than the share count. The earnings given up are the lost interest on the cash, or new interest if the buyback is debt-funded. Use a projected share price, not today's, for future years.</p>`,
 ex:`<p>Net income 100, 100 shares (EPS 1.00). Buyback of 6 shares using cash earning 4% pre-tax: lost after-tax interest = 300 × 4% × 0.75 = 9. EPS = 91 ÷ 94 = 0.968, which is dilutive. At a lower share price the buyback would be accretive.</p>`,
 fu:[["When is a buyback accretive?","<p>When the company's earnings yield (1 ÷ P/E) is higher than the after-tax cost of the cash or debt used. Here the yield is 1 ÷ 50 = 2% (EPS 1 ÷ price 50), below the 3% after-tax cost of cash.</p>"]]},
 
-{id:"f11",l:2,k:"math",q:"Debt is 400 at 5%, with 100 repaid at year-end. What's interest using beginning vs average balances?",
+{id:"f11",l:2,k:"math",q:"Debt is 400 at 5%, with 100 repaid evenly during the year. What's interest using beginning vs average balances?",
 quick:`<p>20 on the beginning balance, 17.5 on the average balance.</p><div class="formula">Beginning: 400 × 5% = 20</div><div class="formula">Average: (400 + 300) ÷ 2 × 5% = 17.5</div>`,
 detail:`<p>The average balance is more accurate when repayments happen during the year, but it creates a circular reference if repayments depend on cash flow after interest.</p>`,
 fu:[["Which is more conservative?","<p>Beginning balance: it shows higher interest expense when debt is being repaid.</p>"]]},

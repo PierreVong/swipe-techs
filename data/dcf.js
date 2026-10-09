@@ -42,7 +42,7 @@ fu:[["Which DCF do bankers usually use?","<p>Unlevered, because it doesn't requi
 
 {id:"v10",top:1,l:1,k:"concept",q:"WACC goes up. What happens to the DCF value?",o:["It goes up","It goes down","No change","Depends on growth only"],a:1,
 quick:`<p>It goes down. A higher discount rate shrinks the present value of every future cash flow, and especially of the terminal value.</p>`,
-detail:`<p>Terminal value is hit twice: the perpetuity formula's denominator (WACC − g) gets bigger, and it's discounted back over more years.</p>`,
+detail:`<p>Terminal value is hit twice: the perpetuity formula's denominator (WACC − g) gets bigger, and as the furthest-out cash flow it feels the higher discount rate the most.</p>`,
 fu:[["What happens if interest rates rise across the economy?","<p>The risk-free rate and cost of debt rise, so WACC rises and DCF values fall, all else equal. That's why long-duration growth stocks are sensitive to rates.</p>"]]},
 
 {id:"v11",top:1,l:2,k:"concept",q:"Why does adding some debt lower WACC, but too much debt raise it?",

@@ -89,7 +89,7 @@ fu:[["How is a $100 goodwill impairment different?","<p>Goodwill impairments are
 quick:`<p>A deferred tax liability arises when book taxes exceed cash taxes paid today, because income is taxed later than it's reported.</p><p>The classic cause is accelerated depreciation for tax and straight-line depreciation for the books.</p>`,
 detail:`<p>Taxable income is lower than book income now, so the company pays less cash tax now and more later. The DTL records that future obligation. On the CFS, an increase in the DTL is added back as a non-cash part of tax expense.</p>`,
 ex:`<p>Asset of 100. Book: straight-line over 5 years = 20/yr. Tax: 40 in year 1. Tax depreciation is 20 higher, so taxable income is 20 lower → cash tax is 5 lower at 25%. DTL +5. It reverses in later years when tax depreciation falls below book.</p>`,
-fu:[["What creates a deferred tax asset?","<p>The opposite: paying more cash tax now than book tax. Common sources are net operating losses (NOLs), and expenses like warranty reserves that are booked now but deductible only when paid.</p>"],
+fu:[["What creates a deferred tax asset?","<p>The opposite: a future tax saving. Net operating losses (NOLs) create one because they lower taxable income in later years. Expenses like warranty reserves that are booked now but deductible only when paid create one too, since cash tax today is higher than book tax.</p>"],
 ["How does an increase in the DTL appear on the cash flow statement?","<p>It's added back in cash from operations, because that part of the tax expense wasn't paid in cash.</p>"]]},
 
 {id:"a16",l:1,k:"3s",top:1,q:"A customer prepays $100 for a year of service. What happens?",

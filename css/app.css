@@ -242,9 +242,70 @@ table.kv td:last-child { font-family: var(--mono); font-size: 13px; text-align: 
 .qlist .mk { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-size: 11px; font-weight: 500; }
 .mk.r0 { background: var(--bad-bg); color: var(--bad); } .mk.r1 { background: var(--mid-bg); color: var(--mid); } .mk.r2 { background: var(--good-bg); color: var(--good); } .mk.rx { background: var(--raise); color: var(--muted); }
 
+/* ---------- Chill Mode: read-only concept cards ---------- */
+/* A soft glow in the topic color replaces the study card's top stripe, so Chill reads as calmer but the same family. */
+.chill-card { background: radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--topic) 17%, transparent), transparent 70%), var(--card); border-color: color-mix(in srgb, var(--topic) 22%, var(--line)); }
+.chill-card::before { display: none; }
+.chill-card .card-head { padding-top: 12px; padding-right: 20px; }
+.chill-card .meta { padding-top: 0; }
+.chill-card .card-scroll { padding-top: 2px; }
+/* Long cards fade out at the bottom edge, a hint that there is more to read. */
+.chill-card .card-scroll { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 22px), transparent); }
+.chill-card .card-scroll::before { flex-grow: 1; }
+.chill-card .card-scroll::after { flex-grow: 2; }
+.meta .ctype { color: var(--muted); }
+.chill-body { display: flex; flex-direction: column; gap: 12px; }
+.hook { font-family: var(--display); font-weight: 600; font-size: clamp(21px, 6vw, 29px); line-height: 1.15; letter-spacing: -.005em; text-wrap: balance; margin: 0; }
+.explain.prose { font-size: 16px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 88%, var(--muted)); }
+.chill-body .prose b { color: var(--topic); font-weight: 600; }
+.verdict-pill { font-family: var(--body); font-size: 11.5px; font-weight: 600; letter-spacing: .01em; text-transform: none; border-radius: 999px; padding: 1px 8px; line-height: 1.5; }
+.verdict-pill.v-no { color: var(--bad); background: var(--bad-bg); }
+.verdict-pill.v-ok { color: var(--good); background: var(--good-bg); }
+.verdict-pill.v-mid { color: var(--mid); background: var(--mid-bg); }
+.cex { background: var(--raise); border-radius: 14px; padding: 10px 13px 11px; }
+.cex .lbl { color: var(--topic); }
+.cex .prose { font-size: 15px; line-height: 1.45; gap: 4px; }
+.cex .calc { font-family: var(--mono); font-size: 13.5px; line-height: 1.5; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cex table.kv td { border-top-color: color-mix(in srgb, var(--line) 70%, transparent); padding: 3px 0; }
+.cex table.kv tr:first-child td { border-top: 0; padding-top: 0; }
+.cex table.kv td:last-child { font-size: 14px; color: var(--ink); }
+.cex table.kv td { text-wrap: balance; }
+.cex.analogy .prose, .cex.scenario .prose { color: color-mix(in srgb, var(--ink) 88%, var(--muted)); }
+.take { border-left: 3px solid var(--topic); background: color-mix(in srgb, var(--topic) 11%, var(--card)); border-radius: 4px 14px 14px 4px; padding: 10px 14px 11px 15px; }
+.take .lbl { color: var(--topic); margin-bottom: 4px; }
+.take p { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; text-wrap: pretty; }
+.more-body { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--line); padding-top: 18px; animation: rise .2s ease-out; }
+.more-body .prose { font-size: 15.5px; }
+.iq { background: color-mix(in srgb, var(--topic) 7%, var(--raise)); border: 1px solid color-mix(in srgb, var(--topic) 25%, var(--line)); border-radius: 12px; padding: 12px 14px; }
+.iq .lbl { color: var(--topic); }
+.iq p { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.4; }
+.chill-foot { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 12px 6px; border-top-color: color-mix(in srgb, var(--line) 60%, transparent); }
+.chill-foot .bm { margin-left: auto; }
+.more-btn { min-height: 44px; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 12px; color: var(--muted); font-weight: 600; font-size: 14.5px; }
+.more-btn:hover { color: var(--ink); background: var(--raise); }
+.more-btn .chev { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; transition: transform .15s; }
+.more-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.try-btn { min-height: 44px; display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; color: var(--topic); border: 1px solid color-mix(in srgb, var(--topic) 45%, var(--line)); font-weight: 600; font-size: 14.5px; white-space: nowrap; }
+.try-btn:hover { background: color-mix(in srgb, var(--topic) 10%, transparent); }
+.swipe-hint { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+.swipe-hint::before { content: "↑"; margin-right: 6px; color: var(--topic); display: inline-block; }
+.slide.cur .swipe-hint::before { animation: nudge 1.2s ease-in-out .8s 3; }
+@keyframes nudge { 50% { transform: translateY(-4px); } }
+/* The card coming into view settles in gently; skipped entirely for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .chill-body > * { transition: opacity .35s ease, transform .35s ease; }
+  .slide:not(.cur) .chill-body > * { opacity: .55; transform: translateY(6px); }
+  .slide.cur .chill-body > :nth-child(2) { transition-delay: .04s; }
+  .slide.cur .chill-body > :nth-child(3) { transition-delay: .08s; }
+  .slide.cur .chill-body > :nth-child(4) { transition-delay: .12s; }
+}
+.crow { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--raise); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.crow small { color: var(--muted); font-family: var(--mono); font-size: 11px; display: block; margin-top: 2px; }
+.crow button { color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px 4px; }
+
 /* ---------- bottom tabs ---------- */
 .tabs {
-  flex: none; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: var(--bg);
+  flex: none; display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--line); background: var(--bg);
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 .tab { height: var(--tabs-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11.5px; font-weight: 500; color: var(--muted); }
@@ -372,6 +433,24 @@ table.kv td:last-child { font-family: var(--mono); font-size: 13px; text-align: 
   .timer { min-width: 76px; padding: 0 10px; }
   .card-scroll { padding-left: 16px; padding-right: 16px; }
   .card-head { padding-left: 16px; }
+  .tab { font-size: 10.5px; letter-spacing: -.01em; }
+  .tab svg { width: 21px; height: 21px; }
+  .chill-foot { padding-left: 8px; padding-right: 8px; }
+  .try-btn { padding: 8px 13px; }
+}
+/* Short phones (iPhone SE size): tighter Chill cards so more of them fit without scrolling inside the card. */
+@media (max-height: 700px) {
+  .chill-card .card-head { padding-top: 8px; }
+  .chill-body { gap: 9px; }
+  .hook { font-size: 20px; }
+  .explain.prose { font-size: 15px; line-height: 1.45; }
+  .cex { padding: 8px 12px 9px; }
+  .cex .lbl, .take .lbl { margin-bottom: 3px; }
+  .cex .prose { font-size: 14px; }
+  .cex .calc { font-size: 12.5px; }
+  .take { padding: 8px 12px 9px 13px; }
+  .take p { font-size: 15px; }
+  .chill-foot { padding-top: 3px; padding-bottom: 4px; }
 }
 /* Touch screens: no keyboard hints. */
 @media (hover: none) and (pointer: coarse) {

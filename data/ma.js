@@ -86,7 +86,7 @@ fu:[["A target contributes 40% of EBITDA but gets 30% ownership. Who benefits?",
 
 {id:"m17",top:1,l:2,k:"concept",q:"The acquisition creates new intangible assets that are amortized. What does that do to accretion?",o:["Makes it more accretive","Makes it more dilutive","No effect on EPS","Only affects cash EPS"],a:1,
 quick:`<p>It makes the deal more dilutive: amortization is an expense that lowers pro forma net income, so GAAP EPS falls.</p><p>That's why companies also show "cash EPS" or adjusted EPS excluding acquisition amortization.</p>`,
-detail:`<p>In a stock deal, the amortization isn't tax-deductible, so there's no tax shield either (the DTL unwinds for book purposes). In an asset deal it's deductible, which softens the hit.</p>`,
+detail:`<p>GAAP EPS falls by the after-tax amount in any deal structure: book tax expense drops by amortization × tax rate. In a stock deal that happens through the DTL unwinding, and cash taxes don't change. In an asset deal the amortization is also tax-deductible, which lowers cash taxes and helps cash flow, but not GAAP EPS.</p>`,
 fu:[["Does that amortization affect cash flow?","<p>Not directly: it's non-cash. In an asset deal it reduces cash taxes, which increases cash flow.</p>"]]},
 
 {id:"m18",l:2,k:"math",top:1,q:"Buyer: net income 100, 50 shares at $40. It buys a target with net income 20 for $300, all with debt at 6%. Tax 25%. Accretive or dilutive?",
@@ -109,7 +109,7 @@ fu:[["When could a financial buyer outbid a strategic?","<p>When debt markets ar
 
 {id:"m21",l:1,k:"math",n:{v:30,u:"%"},q:"A target trades at $20. The buyer offers $26 per share. What's the premium?",
 quick:`<p>30%. (26 − 20) ÷ 20 = 30%.</p>`,
-detail:`<p>Premiums are usually quoted against the undisturbed price and also against 30-day and 52-week averages.</p>`,
+detail:`<p>Premiums are usually quoted against the undisturbed price and also against the 30-day average and the 52-week high.</p>`,
 fu:[["The buyer pays in stock at $52 a share. What exchange ratio gives $26?","<p>26 ÷ 52 = 0.5 buyer shares per target share.</p>"]]},
 
 {id:"m22",l:3,k:"math",q:"Can an all-stock deal be accretive if the buyer's P/E is lower than the purchase P/E?",

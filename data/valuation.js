@@ -70,7 +70,7 @@ fu:[["What if you'd applied a P/E instead?","<p>You'd get equity value directly:
 {id:"v31",l:3,k:"math",q:"What is a sum-of-the-parts valuation, and when would you use it?",
 quick:`<p>Value each business segment separately with the multiples or DCF that fit it, then add them up.</p><p>Use it for conglomerates or companies whose divisions have very different growth and risk.</p>`,
 detail:`<p>A single blended multiple misprices a company with a fast-growing software unit and a slow industrial unit. Markets sometimes apply a "conglomerate discount" to the total, which is often the argument for a spin-off.</p>`,
-ex:`<p>Segment A: EBITDA 50 × 10x = 500. Segment B: EBITDA 30 × 6x = 180. Total EV = 680. A blended 8.5x on 80 total EBITDA would be 680 too, but only by coincidence.</p>`,
+ex:`<p>Segment A: EBITDA 50 × 10x = 500. Segment B: EBITDA 30 × 6x = 180. Total EV = 680. Here 8.5x on 80 total EBITDA also gives 680, but only because 8.5x is the EBITDA-weighted average of the two multiples. A blended multiple taken from peers usually won't match the sum of the parts.</p>`,
 fu:[["What costs might you need to subtract?","<p>Unallocated corporate costs (head office) that no segment carries, valued at a multiple. Possibly also tax costs of separation.</p>"]]},
 
 {id:"v32",top:1,l:2,k:"concept",q:"Why might a DCF value differ widely from what comps imply?",
