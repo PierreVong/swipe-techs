@@ -109,7 +109,7 @@ f:"Rule of 40: Revenue growth % + FCF or EBITDA margin % ≥ 40"},
 rel:["v39","v29"]},
 
 {id:"xv16",t:"myth",v:"Myth",k:["risk-return","wacc"],hook:"Myth or not: faster growth always makes a company worth more.",
-body:`<p>Myth. Growth costs money. If new investment earns more than investors' required return, the <b>cost of capital</b>, it adds value; if it earns less, growing destroys value.</p>`,
+body:`<p>Myth. Growth costs money. It adds value only if new investment earns more than investors' required return, the <b>cost of capital</b>.</p>`,
 exk:"numbers",ex:`<div class="calc">Investors require 10% a year</div><div class="calc">$1,000 store earning $150 (15%): adds value</div><div class="calc">$1,000 store earning $50 (5%): destroys value</div>`,
 take:"Growth adds value only when returns beat the cost of capital.",
 more:{d:`<p>This is why multiples depend on return on invested capital (ROIC) as well as growth. A company with a high ROIC needs to reinvest less of its cash flow to grow, so more is left for investors. Growth at an ROIC equal to the cost of capital adds sales but no value; below it, every new store makes the company worth less than the cash it cost.</p>`},

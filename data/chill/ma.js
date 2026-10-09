@@ -169,7 +169,7 @@ more:{d:`<p>Spreads widen on antitrust worries, financing doubts or a long timel
 rel:["m24","m21"]},
 
 {id:"xm24",t:"concept",k:["purchase-accounting","goodwill"],hook:"After a takeover, what happens to the target's shareholders' equity?",
-body:`<p>It disappears. The buyer adds the target's assets and liabilities at fair value, then <b>eliminates</b> the target's old equity. Buyer equity grows only by any new shares it issued.</p>`,
+body:`<p>It vanishes. The buyer books the target's assets and liabilities at fair value and <b>eliminates</b> its old equity.</p>`,
 exk:"visual",ex:WF([["Buyer equity",1000,"base","1,000"],["+ New shares",500,"add","+500"],["Target equity",0,"add","0 (wiped out)"],["Combined equity",1500,"total","1,500"]]),
 take:"Target equity is wiped out; only newly issued buyer shares add equity.",
 more:{d:`<p>Here the buyer pays 500 in stock. The combined balance sheet adds both companies' assets and liabilities, with write-ups to fair value, new intangibles and goodwill, plus any new deal debt and minus cash used. The target's common equity is eliminated because the buyer now owns it. Buyer equity rises by stock issued and falls by transaction fees, which are expensed.</p>`},

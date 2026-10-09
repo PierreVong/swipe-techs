@@ -22,7 +22,7 @@ more:{d:`<p>Good LBO candidates have stable cash flows, low capex needs, a defen
 rel:["l3","l10"]},
 
 {id:"xl4",t:"concept",core:true,k:["returns","multiples","debt-paydown"],hook:"A PE firm turns $400 into $1,500. Where did the $1,100 come from?",
-body:`<p>Three places: <b>EBITDA growth</b>, debt paydown and a higher exit multiple. Here it buys at 10x EBITDA of 100 with 600 of debt, and sells at 12x EBITDA of 150 with 300 left.</p>`,
+body:`<p>Three places: <b>EBITDA growth</b>, a higher multiple and debt paydown. Buy at 10x $100 of EBITDA, sell at 12x $150, with debt down from $600 to $300.</p>`,
 exk:"visual",ex:WF([["Equity in",400,"base","$400"],["EBITDA growth",500,"add","+$500"],["Higher multiple",300,"add","+$300"],["Debt paydown",300,"add","+$300"],["Equity out",1500,"total","$1,500"]]),
 take:"Grow EBITDA, pay down debt, and hope the multiple rises.",
 more:{d:`<p>Entry EV is 10 × 100 = 1,000, so equity is 1,000 − 600 = 400. Exit EV is 12 × 150 = 1,800, so equity is 1,800 − 300 = 1,500. EBITDA growth is valued at the entry multiple (50 × 10 = 500) and the multiple gain on exit EBITDA (2 × 150 = 300). Ordering the steps the other way (200 and 600) is also fine; the total of 1,100 doesn't change. Sponsors lean on the first two drivers because they control them.</p>`,
@@ -62,7 +62,7 @@ f:"Years to double ≈ 72 ÷ Annual return (%)"},
 rel:["l20","l6"]},
 
 {id:"xl9",t:"myth",v:"Myth",k:["leverage","risk-return"],hook:"More debt means bigger returns. So why not borrow the maximum?",
-body:`<p>Because <b>leverage</b> magnifies losses too. More debt also means more interest, tighter covenants and a bigger chance of default, so sponsors often take less than lenders offer.</p>`,
+body:`<p>Because <b>leverage</b> magnifies losses too, and more debt means more interest and a bigger chance of default.</p>`,
 exk:"numbers",ex:`<div class="calc">A $100 company falls to $80</div><div class="calc">$50 debt: equity $50 → $30, down 40%</div><div class="calc">$80 debt: equity $20 → $0, wiped out</div>`,
 take:"More debt raises both the upside and the odds of a wipeout.",
 more:{d:`<p>The example ignores interest. Heavy debt service also crowds out cash for growth or add-on acquisitions. When rates are high, the extra interest can cancel the return benefit of putting in less equity. Lenders watch interest coverage (EBITDA ÷ interest) and want it comfortably above about 2x.</p>`},

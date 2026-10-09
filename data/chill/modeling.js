@@ -77,7 +77,7 @@ more:{d:`<p>When debt is being paid down, the beginning balance slightly oversta
 rel:["f11","f5","n20"]},
 
 {id:"xf12",t:"concept",core:true,k:["debt-paydown","modeling"],hook:"Why does an LBO model cap debt repayment with Excel's MIN?",
-body:`<p>Spare cash first covers interest and required repayments. A <b>cash sweep</b> then repays debt early with what's left, and MIN stops it repaying more than the cash available or the loan still owed.</p>`,
+body:`<p>After required repayments, a <b>cash sweep</b> repays debt early with what's left. MIN stops it repaying more than the cash or the loan.</p>`,
 exk:"visual",ex:WF([["Spare cash",80,"base","$80"],["− Required",10,"sub","−$10"],["− Sweep (100%)",70,"sub","−$70"],["Spare cash left",0,"total","$0"]]),
 take:"The sweep repays as much as cash allows, and never more.",
 more:{d:`<p>Required repayments are called mandatory amortization. "Spare cash" here is cash after interest and above the minimum cash balance the model keeps. Sweep percentages are often 50% to 100% of the excess, applied to the most senior loan first. Less debt means less interest next year, which frees even more cash. Because repayments cut interest, which changes cash flow, the sweep often sits inside the model's interest circularity.</p>`,f:"Optional repayment = MIN(cash available for sweep, remaining loan balance)"},
