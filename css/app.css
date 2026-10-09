@@ -269,6 +269,7 @@ table.kv td:last-child { font-family: var(--mono); font-size: 13px; text-align: 
 .cex table.kv td { border-top-color: color-mix(in srgb, var(--line) 70%, transparent); padding: 3px 0; }
 .cex table.kv tr:first-child td { border-top: 0; padding-top: 0; }
 .cex table.kv td:last-child { font-size: 14px; color: var(--ink); }
+.cex table.kv td { text-wrap: balance; }
 .cex.analogy .prose, .cex.scenario .prose { color: color-mix(in srgb, var(--ink) 88%, var(--muted)); }
 .take { border-left: 3px solid var(--topic); background: color-mix(in srgb, var(--topic) 11%, var(--card)); border-radius: 4px 14px 14px 4px; padding: 10px 14px 11px 15px; }
 .take .lbl { color: var(--topic); margin-bottom: 4px; }

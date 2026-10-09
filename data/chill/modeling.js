@@ -62,7 +62,7 @@ take:"Fixed costs make profits swing harder than sales, in both directions.",
 more:{d:`<p>If revenue instead fell 10% to 900, EBIT would drop to 900 − 450 − 300 = 150, down 25%. The higher the share of fixed costs, the bigger the swing. That's why models often split opex into fixed and variable parts, and why lenders worry about high-fixed-cost businesses in recessions.</p>`,f:"Operating leverage = % change in EBIT ÷ % change in revenue (here 25% ÷ 10% = 2.5x)"},
 rel:["f13","f18","f12"]},
 
-{id:"xf10",t:"concept",hook:"Why do so many bank models contain a deliberate loop?",
+{id:"xf10",t:"concept",hook:"Why do so many deal models contain a deliberate loop?",
 body:`<p>Interest is often charged on average debt. But debt depends on the cash left to repay it, and cash depends on net income, which depends on interest. That loop is a <b>circular reference</b>, solved with Excel's iterative calculation.</p>`,
 exk:"scenario",ex:`<div class="calc">Interest ↑ → net income ↓ → cash ↓</div><div class="calc">Cash ↓ → less debt repaid → interest ↑</div>`,
 take:"Interest affects cash and cash affects debt, so the model loops back on itself.",
@@ -70,7 +70,7 @@ more:{d:`<p>Models usually add a circuit breaker: a switch that sets interest to
 rel:["f5","l22","l23"]},
 
 {id:"xf11",t:"example",hook:"Debt falls from 400 to 300 at 5%. Is interest 20 or 17.5?",
-body:`<p>Both answers are used. The <b>beginning balance</b> charges a full year of interest on 400, as if nothing were repaid during the year. The <b>average balance</b> assumes repayments happen evenly, which is more accurate but creates a circular reference.</p>`,
+body:`<p>Both answers are used. The <b>beginning balance</b> charges a full year of interest on 400, as if nothing were repaid during the year. The <b>average balance</b> assumes even repayments: more accurate, but circular if repayments depend on cash flow.</p>`,
 exk:"numbers",ex:`<div class="calc">Beginning: 400 × 5% = 20</div><div class="calc">Average: (400 + 300) ÷ 2 × 5% = 17.5</div>`,
 take:"Beginning balance is simpler and more conservative; average balance is more accurate.",
 more:{d:`<p>When debt is being paid down, the beginning balance slightly overstates interest, which makes it the more conservative choice. If repayments really happen only at year-end, the beginning balance is exactly right. Many models include a toggle between the two, so the circular version can be switched off if it breaks.</p>`},

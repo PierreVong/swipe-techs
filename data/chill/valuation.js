@@ -59,7 +59,7 @@ more:{d:`<p>Valuation is about the future, so bankers often lean on forward mult
 rel:["v27","v36"]},
 
 {id:"xv9",t:"intuition",hook:"Two firms earn $100 of EBITDA. Why is one worth more?",
-body:`<p>EBITDA ignores <b>capex</b>: the money spent on equipment and buildings to keep the business running. If one company must reinvest much more, less of its EBITDA turns into <b>free cash flow</b> for investors. Buyers pay for cash they get to keep.</p>`,
+body:`<p>EBITDA ignores <b>capex</b>: the money spent on equipment and buildings to run and grow the business. If one company must reinvest much more, less of its EBITDA turns into <b>free cash flow</b> for investors. Buyers pay for cash they get to keep.</p>`,
 exk:"numbers",ex:`<div class="calc">Software: $100 − $10 capex = $90</div><div class="calc">Steel mill: $100 − $60 capex = $40</div>`,
 take:"EBITDA that needs little reinvestment is worth more.",
 more:{d:`<p>EBITDA ignores capex, working capital needs and taxes, so it overstates cash generation for capital-heavy businesses. That's one reason asset-light companies usually trade at higher EV/EBITDA multiples. For capital-intensive peers, bankers sometimes compare EV/EBIT or EV/(EBITDA − capex) instead.</p>`},
@@ -108,8 +108,8 @@ more:{d:`<p>A revenue multiple implicitly assumes the company will eventually ea
 f:"Rule of 40: Revenue growth % + FCF or EBITDA margin % ≥ 40"},
 rel:["v39","v29"]},
 
-{id:"xv16",t:"myth",v:"Partly true",hook:"Does faster growth always add value?",
-body:`<p>Partly true. Growth costs money: new stores, factories, software. If each dollar reinvested earns more than investors' required return (the <b>cost of capital</b>), growth creates value. If it earns less, growing faster actually <b>destroys value</b>.</p>`,
+{id:"xv16",t:"myth",v:"Myth",hook:"Does faster growth always add value?",
+body:`<p>Myth. Growth costs money: new stores, factories, software. If each dollar reinvested earns more than investors' required return (the <b>cost of capital</b>), growth creates value. If it earns less, growing faster actually <b>destroys value</b>.</p>`,
 exk:"numbers",ex:`<p>Investors require 10%. A $1,000 store earning $150 a year (15%) adds value; one earning $50 (5%) adds sales but destroys value.</p>`,
 take:"Growth adds value only when returns beat the cost of capital.",
 more:{d:`<p>This is why multiples depend on return on invested capital (ROIC) as well as growth. A company with a high ROIC needs to reinvest less of its cash flow to grow, so more is left for investors. Growth at an ROIC equal to the cost of capital adds sales but no value.</p>`},
