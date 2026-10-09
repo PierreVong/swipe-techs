@@ -571,3 +571,9 @@ button.badge.rh-exit { border: 0; font: inherit; font-family: var(--body); font-
 @keyframes tipin { from { opacity: 0; transform: translate(-50%, 10px); } }
 @keyframes dtap { 0%, 40%, 100% { transform: scale(1); } 15%, 30% { transform: scale(.82); } }
 @media (prefers-reduced-motion: reduce) { .tip-dt, .tip-dt .taps { animation: none; } }
+@media (max-height: 700px) {
+  .stat b { font-size: 36px; }
+  .stat span { font-size: 12.5px; }
+  .has-stat .hook { font-size: 18.5px; }
+  .rh-chip { min-height: 32px; font-size: 13px; }
+}

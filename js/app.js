@@ -182,8 +182,12 @@
     // Now and then (a must-know idea, at most every fifth card) the card itself offers a Rabbit hole.
     if (!q && !chillSaved && !s.first && chillById[id].core && chillSession.length - chillChipAt >= 5) s.chip = true;
     if (prev !== id) chillSession.push(id);
+    const chipBefore = chillChipAt;
     s.el = renderChill(s);
     feed.append(s.el); slides.push(s); observer.observe(s.el);
+    // Go deeper is a bonus: drop it if it would make the card scroll on this screen.
+    const chip = s.el.querySelector(".rh-chip"), sc = s.el.querySelector(".card-scroll");
+    if (chip && sc.scrollHeight > sc.clientHeight + 2) { chip.remove(); s.chip = false; chillChipAt = chipBefore; }
     return true;
   }
 
@@ -1287,5 +1291,5 @@
   applyTheme();
   updateHeader();
   rebuild();
-  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: id => renderChill({ id }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
+  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: (id, o) => renderChill({ id, ...o }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
 })();
