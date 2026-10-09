@@ -5,7 +5,9 @@
      k      "concept" | "math" | "3s" (three-statement walkthrough)
      q      question
      o, a   optional multiple-choice options and index of the right one
-     quick  interview-ready answer (HTML)
+     n      optional typed answer for Interview Mode on open number questions: {v: value, u: "%"|"x"|"$"|"", ap: 1 if approximate}
+     quick  interview-ready answer (HTML). Starts with a one-sentence <p> lead; then optional
+            <ol class="steps">, <ul>, <div class="formula"> or <ul class="s3q"> (IS / CFS / BS lines)
      detail detailed explanation (HTML)
      ex     numerical example (HTML, optional)
      fu     follow-ups: [[question, answer HTML], ...]

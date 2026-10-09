@@ -30,6 +30,48 @@
 
   const ICON_BM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
   const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  const ICON_EYE = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const ICON_MIC = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  const ICON_CLOCK = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>';
+  const ICON_CHECK = '<svg class="ck" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  // ---------- numeric answers (Interview Mode) ----------
+  // A card's number comes from an explicit n:{v,u,ap} or from the right option of a numbers quiz ("≈44%", "$2,300", "8.0x").
+  function parseNum(t) {
+    const raw = String(t);
+    const s = raw.trim().replace(/[≈~]/g, "").replace(/−/g, "-").replace(/,/g, "").trim();
+    const m = s.match(/^([+-]?)\s*(\$?)\s*(\d+(?:\.\d+)?)\s*(%|x|years?)?$/i);
+    if (!m) return null;
+    const u = m[2] ? "$" : (m[4] || "").toLowerCase().replace(/^year$/, "years");
+    return { v: (m[1] === "-" ? -1 : 1) * parseFloat(m[3]), u, ap: /[≈~]/.test(raw) };
+  }
+  function numAnswer(q) {
+    if (q.n) return { v: q.n.v, u: q.n.u || "", ap: !!q.n.ap, others: [] };
+    if (q.k !== "math" || !q.o) return null;
+    const r = parseNum(q.o[q.a]);
+    if (!r) return null;
+    r.others = q.o.map(parseNum).filter((x, i) => x && i !== q.a).map(x => x.v);
+    return r;
+  }
+  // Close enough: rounding for exact answers, a few percent (or 1 point) for estimates, never as close to a wrong option.
+  function checkNum(n, x) {
+    let tol = n.ap ? Math.max(Math.abs(n.v) * 0.03, n.u === "%" ? 1 : 0) : Math.max(Math.abs(n.v) * 0.005, n.u === "%" ? 0.05 : 0);
+    n.others.forEach(o => { tol = Math.min(tol, Math.abs(o - n.v) * 0.45); });
+    if (Math.abs(x - n.v) <= tol + 1e-9) return true;
+    return n.u === "%" && Math.abs(x) < 1 && Math.abs(x * 100 - n.v) <= tol + 1e-9;   // typed 0.44 for 44%
+  }
+  const readNum = t => { const v = parseFloat(String(t).replace(/[−–]/g, "-").replace(/[$,%x\s]/gi, "")); return Number.isFinite(v) ? v : null; };
+  const fmtNum = (n, v, approx) => (approx ? "≈" : "") + (v < 0 ? "−" : "") + (n.u === "$" ? "$" : "") +
+    Math.abs(v).toLocaleString("en-US", { maximumFractionDigits: !approx ? 4 : Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2 }) +
+    (n.u === "years" ? " years" : n.u === "$" ? "" : n.u);
+
+  // How a card is answered: quiz options, typed number, out loud (interview), or think-then-reveal.
+  function styleOf(q) {
+    if (mode !== "interview") return q.o ? "mc" : "open";
+    if (numAnswer(q)) return "num";
+    if (q.o && /\bthese\b|mismatched|…$/.test(q.q)) return "mc";      // the question only makes sense with its options
+    return "talk";
+  }
 
   // ---------- session ----------
   const feed = $("#feed");
@@ -62,7 +104,7 @@
     if (ended) return false;
     const id = nextCardId();
     if (!id) { appendEnd(); return false; }
-    const s = { kind: "card", id, seq: st.seq++, state: "ask" };
+    const s = { kind: "card", id, seq: st.seq++, state: "ask", style: styleOf(byId[id]) };
     s.el = renderCard(s);
     feed.append(s.el); slides.push(s); observer.observe(s.el);
     persist();
@@ -81,7 +123,7 @@
 
   function endHTML() {
     const msg = {
-      weak: ["No weak questions right now.", "Cards you rate Didn't know or Partially show up here until you nail them consistently."],
+      weak: ["Nothing to review right now.", "Cards you rate Didn't know or Partially show up here until you nail them consistently."],
       bookmarks: ["No bookmarks yet.", "Tap the bookmark on any card to save it to this collection."],
       topic: ["No cards match these filters.", "Pick at least one category and level."],
     }[mode] || ["You're all caught up.", "Nothing new or due in this selection."];
@@ -94,13 +136,13 @@
   // ---------- card rendering ----------
   function badgesFor(q) {
     const out = [];
-    if (mode === "interview") out.push(`<span class="badge">Q ${interview.ids.indexOf(q.id) + 1} of ${interview.ids.length}</span>`);
+    if (mode === "interview") out.push(`<span class="badge">Q${interview.ids.indexOf(q.id) + 1} of ${interview.ids.length}</span>`);
     else {
       const c = S.get(st, q.id);
       if (!S.isSeen(c)) out.push('<span class="badge new">New</span>');
       else if (S.isWeak(c)) out.push('<span class="badge weak">Weak</span>');
       else if (c.dueN != null) out.push('<span class="badge due">Again</span>');
-      else if (c.dueT != null && c.dueT <= Date.now()) out.push('<span class="badge due">Review</span>');
+      else if (c.dueT != null && c.dueT <= Date.now()) out.push('<span class="badge due">Due</span>');
     }
     if (q.top && mode !== "top100") out.push('<span class="badge top">Top 100</span>');
     return out.join("");
@@ -111,60 +153,89 @@
     const el = document.createElement("section");
     el.className = "slide";
     const bm = st.bookmarks.includes(q.id);
-    const think = mode === "interview" ? "Answer out loud as if you were in the room, then reveal." : "Form your answer first, then tap to check.";
-    const body = q.o
-      ? `<div class="opts">${q.o.map((o, i) => `<button class="opt" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(o)}</span></button>`).join("")}</div>`
-      : `<p class="think">${think}</p>`;
-    el.innerHTML = `<article class="card ask" style="--topic: var(--t-${q.c})" aria-label="${esc(CATS[q.c].name)} question">
+    const size = q.q.length <= 60 ? "qs" : q.q.length <= 110 ? "qm" : "ql";     // shorter questions set larger
+    let body = "";
+    if (s.style === "mc") body = `<div class="opts">${q.o.map((o, i) => `<button class="opt" data-i="${i}"><span class="k">${i + 1}</span><span>${esc(o)}</span></button>`).join("")}</div>`;
+    else if (s.style === "num") {
+      const n = numAnswer(q);
+      const suf = n.u === "years" ? "years" : n.u === "$" ? "" : n.u;
+      body = `<form class="numform" novalidate>
+        <div class="numrow">
+          <button type="button" class="sign" aria-label="Make negative or positive">±</button>
+          <label class="numbox">${n.u === "$" ? '<span class="aff">$</span>' : ""}<input class="numin" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="Answer" aria-label="Your answer${suf ? " in " + esc(suf === "%" ? "percent" : suf === "x" ? "times" : suf) : ""}">${suf ? `<span class="aff">${esc(suf)}</span>` : ""}</label>
+          <button type="submit" class="check">Check</button>
+        </div>
+        <p class="think">${ICON_MIC}<span>Talk through the math out loud, then enter your number.</span></p>
+      </form>`;
+    } else if (s.style === "talk") body = `<p class="think">${ICON_MIC}<span>Answer out loud as if you're in the room, then reveal.</span></p>`;
+    else body = `<p class="think">Answer in your head, then tap to check.</p>`;
+    const kind = q.k !== "concept" ? `<span class="dot">·</span><span>${KINDS[q.k]}</span>` : "";
+    el.innerHTML = `<article class="card ask ${size}" style="--topic: var(--t-${q.c})" aria-label="${esc(CATS[q.c].name)} question">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[q.c].name)}</span><span class="dot">·</span><span>${LEVELS[q.l]}</span><span class="dot">·</span><span>${KINDS[q.k]}</span>${badgesFor(q)}</div>
-        <button class="bm" aria-pressed="${bm}" aria-label="Bookmark this card">${ICON_BM}</button>
+        <div class="meta"><span class="cat">${esc(CATS[q.c].name)}</span><span class="dot">·</span><span>${LEVELS[q.l]}</span>${kind}${badgesFor(q)}</div>
+        <button class="bm" aria-pressed="${bm}" aria-label="Bookmark this card" title="Bookmark">${ICON_BM}</button>
       </div>
       <div class="card-scroll">
-        <h2 class="q">${esc(q.q)}</h2>
-        ${body}
+        <div class="ask-group">
+          <h2 class="q">${esc(q.q)}</h2>
+          ${body}
+        </div>
         <div class="answer" hidden></div>
       </div>
-      <div class="foot">${footAsk(q)}</div>
+      <div class="foot">${footAsk(s)}</div>
     </article>`;
     return el;
   }
 
-  function footAsk(q) {
-    const t = mode === "interview" ? '<div class="timer" aria-hidden="true">0:00</div>' : "";
-    const label = q.o ? (mode === "interview" ? "Not sure? Show the answer" : "Show answer without guessing") : (mode === "interview" ? "I've answered. Show me" : "Tap to reveal");
-    return `${t}<button class="reveal-btn">${label} <kbd>Space</kbd></button>`;
+  function timerBtn() {
+    const on = st.prefs.timer !== false;
+    return `<button class="timer${on ? "" : " off"}" aria-pressed="${on}" title="Interview timer: tap to turn ${on ? "off" : "on"}" aria-label="Interview timer ${on ? "on" : "off"}">${ICON_CLOCK}<span class="t">${on ? "0:00" : "Off"}</span></button>`;
+  }
+  function footAsk(s) {
+    if (s.style === "mc") return `<button class="reveal-btn subtle">Not sure? Show the answer <kbd>Space</kbd></button>`;
+    const t = mode === "interview" ? timerBtn() : "";
+    if (s.style === "num") return `<div class="foot-row">${t}<button class="reveal-btn subtle">Skip, show the answer <kbd>Space</kbd></button></div>`;
+    return `<div class="foot-row">${t}<button class="reveal-btn">${ICON_EYE}<span>Show answer</span><kbd>Space</kbd></button></div>`;
   }
 
   function layer(key, title, html, k) {
-    return `<div class="layer"><button class="layer-toggle" data-layer="${key}" aria-expanded="false">${title}<kbd>${k}</kbd>${ICON_CHEV}</button><div class="layer-body prose" hidden>${html}</div></div>`;
+    return `<div class="layer"><button class="layer-toggle" data-layer="${key}" aria-expanded="false"><span>${title}</span><kbd>${k}</kbd>${ICON_CHEV}</button><div class="layer-body prose" hidden>${html}</div></div>`;
   }
+  const fuHTML = (f, extra) => `<div class="fu${extra ? " " + extra : ""}">${extra ? '<div class="lbl">Likely follow-up</div>' : ""}<p class="fq">${esc(f[0])}</p>${extra ? '<p class="think">Answer it out loud first.</p>' : ""}<button class="fu-show" aria-expanded="false">Show answer</button><div class="prose fa" hidden>${f[1]}</div></div>`;
 
   function answerHTML(q, s) {
     let h = "";
-    if (q.o && s.pick != null) h += `<div class="verdict ${s.pick === q.a ? "ok" : "no"}">${s.pick === q.a ? "Correct" : "Not quite. Answer: " + esc(q.o[q.a])}</div>`;
-    else if (q.o) h += `<div class="verdict">Answer: ${esc(q.o[q.a])}</div>`;
-    h += `<div class="quick"><div class="lbl">Quick answer</div><div class="prose">${q.quick}</div></div>`;
+    if (s.style === "mc" && s.pick != null) h += `<div class="verdict ${s.pick === q.a ? "ok" : "no"}">${s.pick === q.a ? "Correct" : "Not quite"}</div>`;
+    if (s.style === "num") {
+      const n = numAnswer(q);
+      h += s.guess == null ? `<div class="numres"><span>Answer <b>${fmtNum(n, n.v, n.ap)}</b></span></div>`
+        : `<div class="numres ${s.numOk ? "ok" : "no"}"><b class="v">${s.numOk ? "Correct" : "Not quite"}</b><span>You said <b>${fmtNum(n, s.guess)}</b> · answer <b>${fmtNum(n, n.v, n.ap)}</b></span></div>`;
+    }
+    h += `<div class="quick"><div class="lbl">${mode === "interview" ? "Interview answer" : "Quick answer"}</div><div class="prose">${q.quick}</div></div>`;
+    // Interview Mode puts the first follow-up up front, the way an interviewer would ask it.
+    const fus = (q.fu || []).slice();
+    if (mode === "interview" && fus.length) h += fuHTML(fus.shift(), "fu-int");
     if (q.detail) h += layer("detail", "Detailed explanation", q.detail, "E");
     if (q.ex) h += layer("ex", "Numerical example", q.ex, "X");
-    if (q.fu && q.fu.length) {
-      h += `<button class="deeper" aria-expanded="false">Go deeper · ${q.fu.length} follow-up${q.fu.length > 1 ? "s" : ""} <kbd>D</kbd></button>
-        <div class="fus" hidden>${q.fu.map(f => `<div class="fu"><p class="fq">${esc(f[0])}</p><button class="fu-show" aria-expanded="false">Show answer</button><div class="prose fa" hidden>${f[1]}</div></div>`).join("")}</div>`;
+    if (fus.length) {
+      h += `<button class="deeper" aria-expanded="false">Go deeper · ${fus.length} follow-up${fus.length > 1 ? "s" : ""} <kbd>D</kbd></button>
+        <div class="fus" hidden>${fus.map(f => fuHTML(f)).join("")}</div>`;
     }
     return h;
   }
 
   function footRate(s) {
     const prev = S.preview(st, s.id, Date.now());
-    return `<div class="rates">${[0, 1, 2].map(r => `<button class="rate r${r}${s.suggest === r ? " suggest" : ""}" data-r="${r}">${RATES[r]}<small>${r + 1} · ${prev[r]}</small></button>`).join("")}</div>`;
+    return `<div class="rates" role="group" aria-label="How well did you know it?">${[0, 1, 2].map(r => `<button class="rate r${r}${s.suggest === r ? " suggest" : ""}" data-r="${r}"><span class="rl">${RATES[r]}</span><small><kbd>${r + 1}</kbd>${prev[r]}</small></button>`).join("")}</div>`;
   }
 
-  function whenText(s) {
+  // Short "when is it back" text for the chosen rating button.
+  function whenShort(s) {
     const c = S.get(st, s.id);
     if (!c) return "";
-    if (c.dueN != null) return `back in about ${Math.max(1, c.dueN - s.seq)} cards`;
+    if (c.dueN != null) return `back in ≈${Math.max(1, c.dueN - s.seq)} cards`;
     const d = Math.round((c.dueT - S.startOfDay(Date.now())) / DAY);
-    return d <= 1 ? "next review tomorrow" : `next review in ${d} days`;
+    return d <= 1 ? "back tomorrow" : `back in ${d} days`;
   }
 
   // ---------- card actions ----------
@@ -177,16 +248,40 @@
     if (s.t0) s.ms = Date.now() - s.t0;
     const card = s.el.querySelector(".card");
     card.classList.remove("ask"); card.classList.add("revealed");
-    s.el.querySelectorAll(".opt").forEach(b => { b.disabled = true; if (+b.dataset.i === q.a) b.classList.add("right"); });
-    if (q.o && s.pick == null) s.suggest = 0;
+    if (s.style === "mc") {
+      // Keep the right option and a wrong pick; fold away the rest so the answer sits close to the question.
+      s.el.querySelectorAll(".opt").forEach(b => { const i = +b.dataset.i; b.disabled = true; if (i === q.a) b.classList.add("right"); else if (i !== s.pick) b.classList.add("dim"); });
+      if (s.pick == null) s.suggest = 0;
+    }
+    if (s.style === "num") s.el.querySelectorAll(".numform input, .numform button").forEach(x => { x.disabled = true; });
     const think = s.el.querySelector(".think"); if (think) think.remove();
     const ans = s.el.querySelector(".answer");
     ans.innerHTML = answerHTML(q, s); ans.hidden = false;
     s.el.querySelector(".foot").innerHTML = footRate(s);
     // Quizzes record a provisional rating right away (wrong or skipped = Didn't know, right = Nailed it),
     // so swiping on keeps it; tapping a rating button replaces it.
-    if (q.o) record(s, s.suggest);
+    if (s.style === "mc") record(s, s.suggest);
     announce("Answer shown. Rate how well you knew it.");
+  }
+
+  // Interview number entry: check the typed answer, then reveal with a suggested rating.
+  function submitNum(s) {
+    if (s.state !== "ask") return;
+    const inp = s.el.querySelector(".numin");
+    const v = readNum(inp.value);
+    if (v == null) { inp.classList.add("bad"); inp.focus(); announce("Enter a number, or skip to see the answer."); return; }
+    const n = numAnswer(byId[s.id]);
+    s.guess = v; s.numOk = checkNum(n, v);
+    s.suggest = s.numOk ? 2 : 0;
+    inp.classList.remove("bad"); inp.parentElement.classList.add(s.numOk ? "right" : "wrong");
+    inp.blur();
+    reveal(s);
+  }
+  function flipSign(s) {
+    const inp = s.el.querySelector(".numin");
+    const t = inp.value.trim();
+    inp.value = /^[-−]/.test(t) ? t.replace(/^[-−]\s*/, "") : "−" + t;
+    inp.focus();
   }
 
   function record(s, r) {
@@ -204,7 +299,7 @@
   }
 
   function pick(s, i) {
-    if (s.state !== "ask") return;
+    if (s.state !== "ask" || s.style !== "mc") return;
     const q = byId[s.id];
     s.pick = i;
     s.suggest = i === q.a ? 2 : 0;
@@ -219,10 +314,24 @@
     record(s, r);
     s.undo = null;
     s.state = "rated"; s.rating = r;
-    s.el.querySelector(".foot").innerHTML = `<div class="rated">Rated <b>${RATES[r]}</b> · ${whenText(s)}</div>${advance ? "" : '<div class="hint-swipe">Swipe up for the next card</div>'}`;
+    s.el.querySelector(".card").classList.add("rated");
+    // Confirmation in place: the chosen button fills and says when the card is back; the others fade.
+    s.el.querySelectorAll(".rate").forEach(b => {
+      const on = +b.dataset.r === r;
+      b.disabled = true; b.classList.remove("suggest"); b.classList.toggle("sel", on); b.classList.toggle("dim", !on);
+      if (on) b.innerHTML = `<span class="rl">${ICON_CHECK}${RATES[r]}</span><small>${whenShort(s)}</small>`;
+    });
     updateHeader(); updateCtx();
-    announce(`Rated ${RATES[r]}, ${whenText(s)}.`);
-    if (advance) setTimeout(() => { const i = slides.indexOf(s); if (i === cur) goTo(i + 1); }, 260);
+    announce(`Rated ${RATES[r]}, ${whenShort(s)}.`);
+    if (advance) setTimeout(() => { const i = slides.indexOf(s); if (i === cur) goTo(i + 1); }, reduced() ? 150 : 420);
+  }
+
+  function toggleTimer() {
+    st.prefs.timer = st.prefs.timer === false;
+    persist();
+    feed.querySelectorAll(".timer").forEach(b => { b.outerHTML = timerBtn(); });
+    if ($("#timerChips") && openId === "setSheet") drawSettings();
+    tick();
   }
 
   function toggleBookmark(s) {
@@ -260,11 +369,15 @@
     const r = t.closest(".rate"); if (r) return rate(s, +r.dataset.r, true);
     const lt = t.closest(".layer-toggle"); if (lt) return toggleLayer(s, lt.dataset.layer);
     if (t.closest(".deeper")) return toggleDeeper(s);
+    if (t.closest(".timer")) return toggleTimer();
+    if (t.closest(".sign")) return flipSign(s);
     const fs = t.closest(".fu-show");
     if (fs) { const open = fs.getAttribute("aria-expanded") !== "true"; fs.setAttribute("aria-expanded", open); fs.textContent = open ? "Hide answer" : "Show answer"; fs.nextElementSibling.hidden = !open; return; }
-    // Tap anywhere on an unanswered (non-quiz) card to reveal.
-    if (s.state === "ask" && !byId[s.id].o && !t.closest("button, a, .foot") && t.closest(".card")) reveal(s);
+    // Tap anywhere on an unanswered think-then-reveal card to reveal.
+    if (s.state === "ask" && (s.style === "open" || s.style === "talk") && !t.closest("button, a, .foot") && t.closest(".card")) reveal(s);
   });
+  feed.addEventListener("submit", e => { e.preventDefault(); const s = slideOf(e.target); if (s) submitNum(s); });
+  feed.addEventListener("input", e => { if (e.target.classList.contains("numin")) e.target.classList.remove("bad"); });
 
   // ---------- navigation ----------
   function goTo(i) {
@@ -295,9 +408,14 @@
   function tick() {
     clearInterval(timer);
     const s = slides[cur];
-    if (mode !== "interview" || !s || s.kind !== "card" || s.state !== "ask") return;
-    const el = s.el.querySelector(".timer");
-    const draw = () => { if (s.state !== "ask" || !el) return clearInterval(timer); const sec = Math.floor((Date.now() - s.t0) / 1000); el.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); };
+    if (mode !== "interview" || !s || s.kind !== "card" || s.state !== "ask" || st.prefs.timer === false) return;
+    const draw = () => {
+      const b = s.el.querySelector(".timer");
+      if (s.state !== "ask" || !b) return clearInterval(timer);
+      const sec = Math.floor((Date.now() - s.t0) / 1000);
+      b.querySelector(".t").textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+      b.classList.toggle("long", sec >= 120);          // most technical answers should land inside two minutes
+    };
     draw(); timer = setInterval(draw, 1000);
   }
 
@@ -354,7 +472,7 @@
       <div class="score"><b>${pct}%</b><span>${rated.filter(x => x.r === 2).length} nailed · ${rated.filter(x => x.r === 1).length} partial · ${res.length - rated.filter(x => x.r >= 1).length} missed</span></div>
       <p class="think" style="margin:0">${verdict}${avgSec ? ` Average ${avgSec}s before revealing.` : ""}</p>
       <div><div class="lbl">By category</div><div class="mastery">${Object.keys(byCat).map(c => { const b = byCat[c]; const p = Math.round(100 * b.pts / (2 * b.n)); return `<div class="mrow" style="--c: var(--t-${c})"><span>${esc(CATS[c].short || CATS[c].name)}</span><span class="track"><span class="mastered" style="width:${p}%"></span></span><span class="pct">${p}%</span></div>`; }).join("")}</div></div>
-      <div><div class="lbl">Questions</div><ul class="qlist">${res.map(x => `<li><span class="mk ${x.r == null ? "rx" : "r" + x.r}">${x.r == null ? "–" : ["✗", "~", "✓"][x.r]}</span><span>${esc(x.q.q)}</span></li>`).join("")}</ul></div>
+      <div><div class="lbl">Questions</div><ul class="qlist">${res.map(x => `<li><span class="mk ${x.r == null ? "rx" : "r" + x.r}">${x.r == null ? "–" : ["✗", "½", "✓"][x.r]}</span><span>${esc(x.q.q)}</span></li>`).join("")}</ul></div>
       <div class="rowbtns">
         ${misses.length ? `<button class="ghost" data-act="bm-misses">Bookmark the ${misses.length} misses</button>` : ""}
         <button class="primary" data-act="interview">New interview</button>
@@ -382,11 +500,13 @@
     $("#goalFill").style.strokeDashoffset = String(94.25 * (1 - frac));
     $("#goalNum").textContent = today;
     $("#goalBtn").classList.toggle("done", today >= S.DAILY_GOAL);
-    $("#goalBtn").setAttribute("aria-label", `${today} of ${S.DAILY_GOAL} cards today. Open progress.`);
+    $("#goalBtn").setAttribute("aria-label", `Daily goal: ${today} of ${S.DAILY_GOAL} cards today. Open progress.`);
+    $("#goalBtn").title = `Daily goal: ${today} of ${S.DAILY_GOAL} cards`;
     const sk = S.streak(st, now);
     $("#streakNum").textContent = sk;
     $("#streak").classList.toggle("on", today > 0);
-    $("#streak").title = `${sk}-day streak`;
+    $("#streak").title = `${sk}-day streak${today > 0 ? "" : ". Study today to keep it going"}`;
+    $("#streak").setAttribute("aria-label", `${sk}-day streak. Open progress.`);
   }
 
   function updateTabs() {
@@ -403,7 +523,8 @@
       const lv = p.lvls.length === 3 ? "" : " · " + p.lvls.map(l => LEVELS[l]).join(", ");
       text = `Topic Focus · ${cats}${lv}`; b = "Change";
     } else if (mode === "weak") {
-      text = `Weak questions · ${BANK.filter(q => S.isWeak(S.get(st, q.id))).length} to fix`;
+      const n = BANK.filter(q => S.isWeak(S.get(st, q.id))).length;
+      text = `Review · ${n} weak question${n === 1 ? "" : "s"} to fix`;
     } else if (mode === "interview") {
       const s = slides[cur];
       const n = s && s.kind === "card" ? interview.ids.indexOf(s.id) + 1 : interview.ids.length;
@@ -421,7 +542,10 @@
 
   document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setMode(t.dataset.mode)));
   $("#goalBtn").addEventListener("click", () => openSheet("progSheet"));
+  $("#streak").addEventListener("click", () => openSheet("progSheet"));
   $("#collectionsBtn").addEventListener("click", () => openSheet("collSheet"));
+  $("#settingsBtn").addEventListener("click", () => openSheet("setSheet"));
+  $("#toSettings").addEventListener("click", () => openSheet("setSheet"));
 
   // ---------- sheets ----------
   const shade = $("#shade");
@@ -429,12 +553,15 @@
   function openSheet(id) {
     if (openId) closeSheet();
     lastFocus = document.activeElement;
+    if (lastFocus && lastFocus.blur) lastFocus.blur();
     if (id === "topicSheet") { draft = null; drawTopic(); }
     if (id === "collSheet") drawColl();
-    if (id === "progSheet") { drawDash(); drawTheme(); }
+    if (id === "progSheet") drawDash();
+    if (id === "setSheet") drawSettings();
     const el = document.getElementById(id);
     el.hidden = false; shade.hidden = false; openId = id;
-    const f = el.querySelector("button"); if (f) f.focus({ preventScroll: true });
+    el.scrollTop = 0;
+    el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true });      // focus the panel, not its first row
   }
   function closeSheet() {
     if (!openId) return;
@@ -446,27 +573,38 @@
 
   function chip(label, pressed, onClick, color) {
     const b = document.createElement("button");
-    b.className = "chip"; b.setAttribute("aria-pressed", pressed);
-    b.innerHTML = (color ? `<span class="sw" style="--c: var(${color})"></span>` : "") + esc(label);
+    b.className = "chip" + (color ? " cat" : ""); b.setAttribute("aria-pressed", pressed);
+    if (color) b.style.setProperty("--c", `var(${color})`);
+    b.innerHTML = (color ? '<span class="sw"></span>' : "") + ICON_CHECK + `<span>${esc(label)}</span>`;
     b.addEventListener("click", onClick);
     return b;
   }
 
-  // Topic Focus picker works on a draft so closing without Start changes nothing.
+  // Topic Focus picker works on a draft so closing without Start changes nothing. No categories picked = all of them.
   let draft = null;
+  const inTopic = (d, q) => (!d.cats.length || d.cats.includes(q.c)) && d.lvls.includes(q.l);
   function drawTopic() {
     if (!draft) draft = { cats: st.prefs.cats.slice(), lvls: st.prefs.lvls.slice() };
     const cc = $("#catChips"); cc.innerHTML = "";
+    cc.append(chip("All topics", !draft.cats.length, () => { draft.cats = []; drawTopic(); }));
     Object.keys(CATS).forEach(k => cc.append(chip(CATS[k].name, draft.cats.includes(k), () => {
-      draft.cats = draft.cats.includes(k) ? draft.cats.filter(x => x !== k) : [...draft.cats, k]; drawTopic();
+      draft.cats = draft.cats.includes(k) ? draft.cats.filter(x => x !== k) : [...draft.cats, k];
+      if (draft.cats.length === Object.keys(CATS).length) draft.cats = [];
+      drawTopic();
     }, `--t-${k}`)));
     const lc = $("#lvlChips"); lc.innerHTML = "";
     [1, 2, 3].forEach(l => lc.append(chip(LEVELS[l], draft.lvls.includes(l), () => {
       draft.lvls = draft.lvls.includes(l) ? draft.lvls.filter(x => x !== l) : [...draft.lvls, l].sort(); drawTopic();
     })));
-    const n = BANK.filter(q => (!draft.cats.length || draft.cats.includes(q.c)) && draft.lvls.includes(q.l)).length;
-    $("#topicCount").textContent = `${n} cards${draft.cats.length ? "" : " · all categories"}`;
-    $("#topicStart").disabled = !n;
+    const now = Date.now();
+    const pool = BANK.filter(q => inTopic(draft, q));
+    const due = pool.filter(q => { const c = S.get(st, q.id); return c && (c.dueN != null || (c.dueT != null && c.dueT <= now)); }).length;
+    const fresh = pool.filter(q => !S.isSeen(S.get(st, q.id))).length;
+    const cats = draft.cats.length ? draft.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "All topics";
+    const lv = !draft.lvls.length ? "pick a level" : draft.lvls.length === 3 ? "all levels" : draft.lvls.map(l => LEVELS[l]).join(", ");
+    $("#topicSel").textContent = `${cats} · ${lv}`;
+    $("#topicCount").textContent = pool.length ? `${pool.length} questions · ${due} due · ${fresh} new` : "No questions match";
+    $("#topicStart").disabled = !pool.length;
   }
   $("#topicStart").addEventListener("click", () => {
     st.prefs.cats = draft.cats; st.prefs.lvls = draft.lvls.length ? draft.lvls : [1, 2, 3]; draft = null;
@@ -482,9 +620,12 @@
   $("#collTop").addEventListener("click", () => { closeSheet(); mode = "top100"; interview = null; rebuild(); });
   $("#collBm").addEventListener("click", () => { closeSheet(); mode = "bookmarks"; interview = null; rebuild(); });
 
-  function drawTheme() {
+  // ---------- settings ----------
+  function drawSettings() {
     const tc = $("#themeChips"); tc.innerHTML = "";
-    [["system", "Match device"], ["light", "Light"], ["dark", "Dark"]].forEach(([k, l]) => tc.append(chip(l, st.prefs.theme === k, () => { st.prefs.theme = k; persist(); applyTheme(); drawTheme(); })));
+    [["system", "Match device"], ["light", "Light"], ["dark", "Dark"]].forEach(([k, l]) => tc.append(chip(l, st.prefs.theme === k, () => { st.prefs.theme = k; persist(); applyTheme(); drawSettings(); })));
+    const tm = $("#timerChips"); tm.innerHTML = "";
+    [[true, "Show timer"], [false, "Hide timer"]].forEach(([v, l]) => tm.append(chip(l, (st.prefs.timer !== false) === v, () => { if ((st.prefs.timer !== false) !== v) toggleTimer(); drawSettings(); })));
   }
   function applyTheme() {
     const t = st.prefs.theme;
@@ -492,35 +633,55 @@
     else document.documentElement.removeAttribute("data-theme");
   }
 
+  // ---------- progress dashboard ----------
+  function ring(frac, cls) {
+    const C = 2 * Math.PI * 42;
+    return `<svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="42"/><circle class="fill ${cls || ""}" cx="48" cy="48" r="42" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - Math.min(1, frac))).toFixed(1)}"/></svg>`;
+  }
   function drawDash() {
     const now = Date.now();
     const x = S.stats(st, BANK, now);
-    const frac = Math.min(1, x.today / x.goal);
-    const C = 2 * Math.PI * 42;
+    const pct = x.total ? Math.round(100 * x.mastered / x.total) : 0;
+    const learning = x.studied - x.mastered;
     const maxW = Math.max(x.goal, ...x.week.map(w => w.n));
     const dayLetter = k => "SMTWTFS"[new Date(k + "T12:00:00").getDay()];
     const last = (st.interviews || [])[0];
     const weakest = x.weakest.slice(0, 3);
+    const goalLeft = Math.max(0, x.goal - x.today);
     $("#dash").innerHTML = `
-      <div class="dash-top">
-        <div class="big-ring ${x.today >= x.goal ? "done" : ""}"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="42"/><circle class="fill" cx="48" cy="48" r="42" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - frac)).toFixed(1)}"/></svg>
-          <div class="in"><div><b>${x.today}</b><span>of ${x.goal} today</span></div></div></div>
-        <div>
-          <div class="week" aria-label="Cards reviewed in the last 7 days">${x.week.map(w => `<div class="wk" title="${w.day}: ${w.n}"><i class="${w.n >= x.goal ? "goal-hit" : ""}" style="height:${Math.round(100 * w.n / maxW)}%"></i><span>${dayLetter(w.day)}</span></div>`).join("")}</div>
-          <p class="note">${x.streak ? `${x.streak}-day streak` : "No streak yet"} · best ${x.best}${x.today >= x.goal ? " · goal hit today" : ` · ${Math.max(0, x.goal - x.today)} to go today`}</p>
+      <div class="hero">
+        <div class="big-ring">${ring(x.mastered / x.total)}<div class="in"><b>${pct}%</b><span>mastered</span></div></div>
+        <div class="hero-txt">
+          <div class="hero-n"><b>${x.mastered}</b> of ${x.total} questions mastered</div>
+          <div class="stackbar" aria-hidden="true"><i class="m" style="width:${100 * x.mastered / x.total}%"></i><i class="l" style="width:${100 * learning / x.total}%"></i></div>
+          <p class="note">${learning} in progress · ${x.total - x.studied} not started</p>
         </div>
       </div>
       <div class="tiles">
-        <div class="tile"><b>${x.studied}</b><span>studied of ${x.total}</span></div>
-        <div class="tile"><b>${x.mastered}</b><span>mastered</span></div>
-        <div class="tile"><b>${x.dueNow}</b><span>due now</span></div>
-        <div class="tile"><b>${x.weak}</b><span>weak</span></div>
+        <div class="tile"><span class="tl">Studied</span><b>${x.studied}</b><small>of ${x.total}</small></div>
+        <div class="tile"><span class="tl">Mastered</span><b>${x.mastered}</b><small>${pct}% of all</small></div>
+        <div class="tile${x.today > 0 ? " hot" : ""}"><span class="tl">Streak</span><b>${x.streak}</b><small>${x.streak === 1 ? "day" : "days"} · best ${x.best}</small></div>
+        <div class="tile"><span class="tl">Due now</span><b>${x.dueNow}</b><small>${x.weak} weak</small></div>
       </div>
-      <h3>Mastery by category</h3>
-      <div class="mastery">${Object.keys(CATS).map(c => { const b = x.byCat[c] || { total: 0, studied: 0, mastered: 0 }; return `<button class="mrow" data-cat="${c}" style="--c: var(--t-${c})" aria-label="${esc(CATS[c].name)}: ${b.mastered} of ${b.total} mastered. Study this topic."><span>${esc(CATS[c].short || CATS[c].name)}</span><span class="track"><span class="studied" style="width:${b.total ? 100 * b.studied / b.total : 0}%"></span><span class="mastered" style="width:${b.total ? 100 * b.mastered / b.total : 0}%"></span></span><span class="pct">${b.mastered}/${b.total}</span></button>`; }).join("")}</div>
-      <div class="legend"><span><i></i>mastered</span><span><i class="s"></i>studied</span><span>Tap a row to study it</span></div>
+      <h3>Today</h3>
+      <div class="today">
+        <div class="goal-line"><b>${x.today}</b><span>/ ${x.goal} cards</span><em>${x.today >= x.goal ? "Goal hit" : `${goalLeft} to go`}</em></div>
+        <div class="goalbar${x.today >= x.goal ? " done" : ""}"><i style="width:${100 * Math.min(1, x.today / x.goal)}%"></i></div>
+        <div class="week" aria-label="Cards reviewed in the last 7 days">${x.week.map(w => `<div class="wk" title="${w.day}: ${w.n}"><i class="${w.n >= x.goal ? "goal-hit" : ""}" style="height:${Math.round(100 * w.n / maxW)}%"></i><span>${dayLetter(w.day)}</span></div>`).join("")}</div>
+      </div>
+      <h3>Mastery by topic</h3>
+      <div class="legend"><span><i class="m"></i>Mastered</span><span><i class="l"></i>In progress</span><span><i class="n"></i>Not started</span></div>
+      <div class="mastery">${Object.keys(CATS).map(c => {
+        const b = x.byCat[c] || { total: 0, studied: 0, mastered: 0 };
+        const p = b.total ? Math.round(100 * b.mastered / b.total) : 0;
+        return `<button class="mrow" data-cat="${c}" style="--c: var(--t-${c})" aria-label="${esc(CATS[c].name)}: ${b.mastered} of ${b.total} mastered, ${b.studied - b.mastered} in progress. Study this topic.">
+          <span class="mname">${esc(CATS[c].name)}</span><span class="pct">${p}%</span>
+          <span class="track"><i class="m" style="width:${b.total ? 100 * b.mastered / b.total : 0}%"></i><i class="l" style="width:${b.total ? 100 * (b.studied - b.mastered) / b.total : 0}%"></i></span>
+          <span class="msub">${b.mastered} mastered · ${b.studied - b.mastered} in progress · ${b.total - b.studied} new</span></button>`;
+      }).join("")}</div>
+      <p class="note">Mastered means nailed on 3 separate days. Tap a topic to study it.</p>
       <h3>Weakest topics</h3>
-      ${weakest.length ? `<div class="weakest">${weakest.map(w => `<div class="wrow"><div>${esc(CATS[w.cat].name)}<small>${Math.round(w.rate * 100)}% recall</small></div><button data-cat="${w.cat}">Practice</button></div>`).join("")}</div>` : `<p class="note">Review at least 5 cards in a category to see how it compares.</p>`}
+      ${weakest.length ? `<div class="weakest">${weakest.map(w => `<div class="wrow"><div>${esc(CATS[w.cat].name)}<small>${Math.round(w.rate * 100)}% recall</small></div><button data-cat="${w.cat}">Practice</button></div>`).join("")}</div>` : `<p class="note">Review at least 5 cards in a topic to see how it compares.</p>`}
       ${last ? `<h3>Last interview</h3><p class="note">${last.pct}% · ${last.nailed} of ${last.n} nailed · ${new Date(last.t).toLocaleDateString()}</p>` : ""}`;
     $("#dash").querySelectorAll("[data-cat]").forEach(b => b.addEventListener("click", () => {
       st.prefs.cats = [b.dataset.cat]; st.prefs.lvls = [1, 2, 3]; closeSheet(); mode = "topic"; interview = null; rebuild();
@@ -529,17 +690,19 @@
 
   let armed = false;
   $("#reset").addEventListener("click", e => {
-    if (!armed) { armed = true; e.target.textContent = "Tap again to erase review history (bookmarks stay)"; setTimeout(() => { armed = false; e.target.textContent = "Reset progress"; }, 3500); return; }
+    const b = e.currentTarget;
+    if (!armed) { armed = true; b.textContent = "Tap again to erase review history (bookmarks stay)"; setTimeout(() => { armed = false; b.textContent = "Reset progress"; }, 3500); return; }
     const keep = { bookmarks: st.bookmarks, prefs: st.prefs };
     st = Object.assign(S.blankState(), keep);
-    persist(); armed = false; e.target.textContent = "Progress reset";
-    drawDash(); updateHeader(); rebuild();
+    persist(); armed = false; b.textContent = "Progress reset";
+    updateHeader(); rebuild();
   });
 
   // ---------- keyboard ----------
   document.addEventListener("keydown", e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (openId) { if (e.key === "Escape") closeSheet(); return; }
+    if (e.target.matches && e.target.matches("input, textarea")) { if (e.key === "Escape") e.target.blur(); return; }   // typing a number
     const s = slides[cur];
     const k = e.key.toLowerCase();
     const onButton = e.target.closest && e.target.closest("button");
@@ -549,13 +712,14 @@
     const q = byId[s.id];
     if ((k === " " || k === "enter") && !onButton) {
       e.preventDefault();
-      if (s.state === "ask") reveal(s); else if (s.state === "rated") goTo(cur + 1);
+      if (s.state === "ask" && s.style === "num" && k === "enter") { const i = s.el.querySelector(".numin"); i.focus(); }
+      else if (s.state === "ask") reveal(s); else if (s.state === "rated") goTo(cur + 1);
       return;
     }
     if (k === " " && onButton) return;
     if (/^[1-4]$/.test(k)) {
       const n = +k - 1;
-      if (s.state === "ask" && q.o && n < q.o.length) pick(s, n);
+      if (s.state === "ask" && s.style === "mc" && n < q.o.length) pick(s, n);
       else if (s.state === "revealed" && n <= 2) rate(s, n, true);
       return;
     }

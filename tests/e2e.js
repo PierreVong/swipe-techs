@@ -35,19 +35,20 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   // Block Google Fonts so tests don't depend on the network.
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const page = await ctx.newPage(); watch(page);
-  const app = () => page.evaluate(() => { const a = window.__swipe; return { mode: a.mode, cur: a.cur, st: a.st, slides: a.slides.map(s => ({ kind: s.kind, id: s.id, state: s.state, seq: s.seq })) }; });
+  const app = () => page.evaluate(() => { const a = window.__swipe; return { mode: a.mode, cur: a.cur, st: a.st, slides: a.slides.map(s => ({ kind: s.kind, id: s.id, state: s.state, seq: s.seq, style: s.style })) }; });
   const curSlide = () => page.locator(".slide").nth(0).evaluate(() => 0).then(async () => { const a = await app(); return { ...a.slides[a.cur], idx: a.cur }; });
   const curEl = async () => { const a = await app(); return page.locator(".slide").nth(a.cur); };
   const waitCur = async idx => page.waitForFunction(i => window.__swipe.cur === i, idx, { timeout: 4000 });
   const bank = await (async () => { await page.goto(URL); return page.evaluate(() => Object.fromEntries(window.QB.map(q => [q.id, { c: q.c, l: q.l, o: !!q.o, a: q.a, top: !!q.top }]))); })();
 
-  // Answer the visible card: reveal (tap or quiz pick) then rate r. Returns the card id.
+  // Answer the visible card: reveal (tap, quiz pick or the reveal button) then rate r. Returns the card id.
   const answer = async (r, viaKeys) => {
     const s = await curSlide();
     const el = await curEl();
-    if (viaKeys) await page.keyboard.press(bank[s.id].o ? String(bank[s.id].a + 1) : "Space");
-    else if (bank[s.id].o) await el.locator(`.opt[data-i="${bank[s.id].a}"]`).click();
-    else await el.locator(".q").click();
+    if (viaKeys) await page.keyboard.press(s.style === "mc" ? String(bank[s.id].a + 1) : "Space");
+    else if (s.style === "mc") await el.locator(`.opt[data-i="${bank[s.id].a}"]`).click();
+    else if (s.style === "open") await el.locator(".q").click();
+    else await el.locator(".reveal-btn").click();
     await el.locator(".rates").waitFor();
     if (viaKeys) await page.keyboard.press(String(r + 1)); else await el.locator(`.rate[data-r="${r}"]`).click();
     await waitCur(s.idx + 1);
@@ -65,6 +66,12 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await shot(page, "phone-1-question");
   });
 
+  await step("short questions sit in the middle of the card, not stuck at the top", async () => {
+    const el = await curEl();
+    const r = await el.evaluate(n => { const c = n.querySelector(".card-scroll").getBoundingClientRect(), g = n.querySelector(".ask-group").getBoundingClientRect(); return { above: g.top - c.top, below: c.bottom - g.bottom, fits: g.height < c.height - 40 }; });
+    if (r.fits) assert.ok(r.above > 30 && r.below > r.above * 0.9, JSON.stringify(r));
+  });
+
   await step("reveal shows Quick answer, layers expand, Go deeper shows follow-ups", async () => {
     const s = await curSlide(); const el = await curEl();
     if (bank[s.id].o) await el.locator(`.opt[data-i="${bank[s.id].a}"]`).click(); else await el.locator(".card-scroll").click({ position: { x: 30, y: 200 } });
@@ -79,7 +86,28 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await el.locator(".fu-show").first().click();
     assert.ok(await el.locator(".fa").first().isVisible());
     assert.equal(await el.locator(".rate").count(), 3);
+    assert.ok(await el.locator(".quick .prose > p:first-child").count(), "quick answer opens with a lead sentence");
     await shot(page, "phone-2-revealed");
+  });
+
+  await step("scrolling to the end of a long explanation doesn't jump to the next card", async () => {
+    // Find a card with more to read than fits on screen (open every layer), rating short ones along the way.
+    let s, el;
+    for (let i = 0; i < 12; i++) {
+      s = await curSlide(); el = await curEl();
+      if (s.state === "ask") { if (s.style === "mc") await el.locator(`.opt[data-i="${bank[s.id].a}"]`).click(); else await el.locator(".q").click(); }
+      await el.locator(".rates").waitFor();
+      if (await el.locator(".deeper").count() && await el.locator('.deeper[aria-expanded="false"]').count()) await el.locator(".deeper").click();
+      await el.evaluate(n => n.querySelectorAll('.layer-toggle[aria-expanded="false"], .fu-show[aria-expanded="false"]').forEach(b => b.click()));
+      if (await el.locator(".card-scroll").evaluate(n => n.scrollHeight > n.clientHeight + 100)) break;
+      await el.locator('.rate[data-r="2"]').click(); await waitCur(s.idx + 1);
+    }
+    assert.ok(await el.locator(".card-scroll").evaluate(n => n.scrollHeight > n.clientHeight + 100), "no long card found");
+    const box = await el.locator(".card-scroll").boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, 700); await page.waitForTimeout(60); }
+    await page.waitForTimeout(700);
+    assert.equal((await app()).cur, s.idx, "feed moved while scrolling inside the card");
   });
 
   let missed;
@@ -92,6 +120,10 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     const c = a.st.cards[missed];
     assert.equal(c.last, 0);
     assert.ok(c.dueN - s.seq >= 3 && c.dueN - s.seq <= 5, "gap " + (c.dueN - s.seq));
+    const prev = page.locator(".slide").nth(s.idx);
+    assert.equal(await prev.locator(".rate.sel").count(), 1, "chosen rating stays highlighted");
+    assert.match(await prev.locator(".rate.sel").textContent(), /back in ≈\d cards/);
+    assert.equal(await prev.locator(".rate:not([disabled])").count(), 0);
   });
 
   await step("the missed card comes back within 3-5 cards", async () => {
@@ -129,10 +161,11 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await page.keyboard.press("ArrowDown"); await waitCur(before);
   });
 
-  await step("Weak Questions mode shows the cards you missed", async () => {
+  await step("Review tab (weak questions) shows the cards you missed", async () => {
+    assert.equal((await page.locator('.tab[data-mode="weak"]').textContent()).trim(), "Review");
     await page.locator('.tab[data-mode="weak"]').click();
     await page.waitForFunction(() => window.__swipe.mode === "weak");
-    assert.match(await page.locator("#ctxLabel").textContent(), /Weak questions · \d+ to fix/);
+    assert.match(await page.locator("#ctxLabel").textContent(), /Review · \d+ weak questions? to fix/);
     const s = await curSlide();
     const a = await app();
     const wk = a.st.cards[s.id];
@@ -146,10 +179,13 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await lbo.click();
     await page.locator("#lvlChips .chip", { hasText: "Beginner" }).click();
     await page.locator("#lvlChips .chip", { hasText: "Intermediate" }).click();
-    assert.match(await page.locator("#topicCount").textContent(), /^\d+ cards$/);
+    assert.equal(await lbo.getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator("#catChips .chip", { hasText: "All topics" }).getAttribute("aria-pressed"), "false");
+    assert.equal(await page.locator("#topicSel").textContent(), "LBO · Advanced");
+    assert.match(await page.locator("#topicCount").textContent(), /^\d+ questions · \d+ due · \d+ new$/);
     await page.locator("#topicStart").click();
     await page.waitForFunction(() => window.__swipe.mode === "topic");
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {      // 5 reviews in one topic also makes it eligible for "weakest topics"
       const s = await curSlide();
       assert.equal(bank[s.id].c, "lbo"); assert.equal(bank[s.id].l, 3);
       await answer(1);
@@ -170,16 +206,36 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.ok(a.st.bookmarks.includes((await curSlide()).id));
   });
 
-  await step("Interview Mode: 12 questions, answers hidden until attempted, breakdown at the end", async () => {
+  await step("Interview Mode: 12 questions, spoken or typed answers, follow-ups, breakdown at the end", async () => {
     await page.locator('.tab[data-mode="interview"]').click();
     await page.waitForFunction(() => window.__swipe.mode === "interview");
     const ids = new Set();
+    let typed = 0, spoken = 0;
     for (let i = 0; i < 12; i++) {
-      const el = await curEl();
+      const el = await curEl(); const s = await curSlide();
       assert.ok(await el.locator(".answer").isHidden(), "answer hidden before attempt");
-      if (i === 0) { assert.match(await el.locator(".timer").textContent(), /^0:0\d$/); await shot(page, "phone-3-interview"); }
+      if (i === 0) { assert.match(await el.locator(".timer .t").textContent(), /^0:0\d$/); await shot(page, "phone-3-interview"); }
+      if (s.style === "talk") { spoken++; assert.equal(await el.locator(".opt").count(), 0, "no answer choices on spoken questions"); }
+      if (s.style === "num" && !typed) {
+        typed++;
+        const right = await page.evaluate(id => { const q = window.QB.find(x => x.id === id); return q.n ? q.n.v : parseFloat(q.o[q.a].replace(/[^0-9.\-]/g, "")); }, s.id);
+        await el.locator(".numin").fill(String(right));
+        await el.locator(".check").click();
+        await el.locator(".rates").waitFor();
+        assert.ok(await el.locator(".numres.ok").count(), "typed the right number");
+        assert.ok(await el.locator('.rate[data-r="2"].suggest').count());
+        await el.locator('.rate[data-r="2"]').click(); await waitCur(s.idx + 1);
+        ids.add(s.id); continue;
+      }
+      if (s.style !== "mc") {
+        await el.locator(".reveal-btn").click();
+        assert.ok(await el.locator(".fu-int .fq").isVisible(), "follow-up question shown with the answer");
+        await el.locator('.rate[data-r="' + (i % 3) + '"]').click(); await waitCur(s.idx + 1);
+        ids.add(s.id); continue;
+      }
       ids.add(await answer(i % 3));
     }
+    assert.ok(spoken >= 6, "most interview questions are answered out loud");
     assert.equal(ids.size, 12);
     const el = await curEl();
     await el.locator(".score").waitFor();
@@ -196,16 +252,20 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await page.locator('.tab[data-mode="progress"]').click();
     await page.locator("#progSheet").waitFor();
     assert.equal(await page.locator("#dash .mrow").count(), 8);
-    assert.match(await page.locator("#dash .big-ring").textContent(), /of 20 today/);
-    assert.match(await page.locator("#dash").textContent(), /1-day streak/);
+    assert.match(await page.locator("#dash .big-ring").textContent(), /\d+%\s*mastered/);
+    assert.match(await page.locator("#dash .tiles").textContent(), /Streak\s*1\s*day/);
+    assert.match(await page.locator("#dash .goal-line").textContent(), /\/ 20 cards/);
+    assert.equal(await page.locator("#progSheet #themeChips").count(), 0, "appearance lives in Settings");
     assert.ok(await page.locator("#dash .wrow").count() >= 1, "weakest topics listed");
     assert.match(await page.locator("#dash").textContent(), /Last interview/);
     await shot(page, "phone-5-progress");
+    await page.locator("#toSettings").click();
+    await page.locator("#setSheet").waitFor();
     await page.locator("#themeChips .chip", { hasText: "Dark" }).click();
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "dark");
     await shot(page, "phone-6-progress-dark");
     await page.keyboard.press("Escape");
-    assert.ok(await page.locator("#progSheet").isHidden());
+    assert.ok(await page.locator("#setSheet").isHidden());
     await shot(page, "phone-7-dark-feed");
   });
 
@@ -225,7 +285,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await page.waitForFunction(() => window.__swipe.mode === "foryou");
     for (let i = 0; i < 40; i++) {
       const s = await curSlide();
-      if (bank[s.id].o) {
+      if (s.style === "mc") {
         const el = await curEl();
         const before = await app();
         const day = Object.keys(before.st.log).pop(), n0 = before.st.log[day], c0 = before.st.cards[s.id] ? before.st.cards[s.id].n : 0;
@@ -249,7 +309,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await page.waitForFunction(() => window.__swipe.mode === "foryou");
     for (let i = 0; i < 40; i++) {
       const s = await curSlide();
-      if (bank[s.id].o) {
+      if (s.style === "mc") {
         const el = await curEl();
         const wrong = (bank[s.id].a + 1) % 2;
         await el.locator(`.opt[data-i="${wrong}"]`).click();
@@ -264,6 +324,24 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     throw new Error("no quiz card found");
   });
   await ctx.close();
+
+  // ---------- small phone ----------
+  console.log("Small phone");
+  const ctxS = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, serviceWorkers: "block" });
+  await ctxS.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  const pS = await ctxS.newPage(); watch(pS);
+  await pS.goto(URL);
+  await pS.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+  await step("320px wide: nothing overflows, controls stay big enough to tap", async () => {
+    const r = await pS.evaluate(() => {
+      const small = [...document.querySelectorAll(".bar button, .tab, .slide:first-child .foot button, .slide:first-child .bm, .slide:first-child .opt")]
+        .map(b => b.getBoundingClientRect()).filter(b => b.width && (b.height < 34 || b.width < 34));
+      return { ov: document.documentElement.scrollWidth - document.documentElement.clientWidth, small: small.length, settings: document.querySelector("#settingsBtn").getBoundingClientRect().right <= innerWidth };
+    });
+    assert.equal(r.ov, 0); assert.equal(r.small, 0); assert.ok(r.settings, "settings button on screen");
+    await shot(pS, "small-1");
+  });
+  await ctxS.close();
 
   // ---------- migration from v1 ----------
   console.log("Migration");
@@ -295,6 +373,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   await step("keyboard-only flow: reveal, explanation, rate, next", async () => {
     const q = await p3.evaluate(() => { const s = window.__swipe.slides[window.__swipe.cur]; return window.QB.find(x => x.id === s.id); });
     await p3.keyboard.press(q.o ? String(q.a + 1) : "Space");
+    assert.ok(await p3.locator(".slide").first().locator(".rate kbd").first().isVisible(), "shortcut hints shown on desktop");
     await p3.locator(".slide").first().locator(".rates").waitFor();
     await p3.keyboard.press("e");
     assert.ok(await p3.locator(".slide").first().locator(".layer-body").first().isVisible());

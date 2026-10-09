@@ -24,7 +24,7 @@
   }
 
   function blankState() {
-    return { v: 2, seq: 0, cards: {}, bookmarks: [], log: {}, prefs: { mode: "foryou", cats: [], lvls: [1, 2, 3], theme: "system" }, interviews: [], migratedFromV1: false };
+    return { v: 2, seq: 0, cards: {}, bookmarks: [], log: {}, prefs: { mode: "foryou", cats: [], lvls: [1, 2, 3], theme: "system", timer: true }, interviews: [], migratedFromV1: false };
   }
 
   /* Convert v1 progress ({rec:{id:{g,m,streak,due,last}}, saved:[]}) without losing anything. */
@@ -75,7 +75,7 @@
     const c = get(s, id) || blankCard();
     return [0, 1, 2].map(r => {
       const t = rateCard(JSON.parse(JSON.stringify(c)), r, now, 0, () => 0.5);
-      if (t.dueN != null) return "~" + t.dueN + " cards";
+      if (t.dueN != null) return "≈" + t.dueN + " cards";
       const d = Math.round((t.dueT - startOfDay(now)) / DAY);
       return d <= 1 ? "tomorrow" : d + " days";
     });
