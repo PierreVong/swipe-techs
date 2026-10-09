@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Swipe Techs">
+<meta name="theme-color" content="#e9edf2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b111d" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style>
+<title>Swipe Techs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one full-height card per screen, vertical snap scroll like a short-video feed; slim top bar, bottom sheet for filters. */
+:root {
+  --bg: #e9edf2;
+  --card: #ffffff;
+  --ink: #0f1b2d;
+  --muted: #5a677a;
+  --line: #d3dae3;
+  --accent: #2745c9;
+  --accent-ink: #ffffff;
+  --good: #11804f;
+  --good-bg: #e2f4ea;
+  --bad: #c0322b;
+  --bad-bg: #fbe6e4;
+  --sheet-shade: rgba(15, 27, 45, .45);
+  --t-acct: #b45309; --t-ev: #2745c9; --t-val: #0f766e; --t-ma: #7c3aed; --t-lbo: #be185d;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b111d; --card: #141c2c; --ink: #e6ebf3; --muted: #95a1b5; --line: #26314a;
+    --accent: #8197ff; --accent-ink: #0b111d;
+    --good: #4cc98c; --good-bg: #12301f; --bad: #ff7d74; --bad-bg: #3a1716;
+    --sheet-shade: rgba(0, 0, 0, .6);
+    --t-acct: #f0a14a; --t-ev: #8197ff; --t-val: #3cc4b4; --t-ma: #b394ff; --t-lbo: #f472b6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b111d; --card: #141c2c; --ink: #e6ebf3; --muted: #95a1b5; --line: #26314a;
+  --accent: #8197ff; --accent-ink: #0b111d;
+  --good: #4cc98c; --good-bg: #12301f; --bad: #ff7d74; --bad-bg: #3a1716;
+  --sheet-shade: rgba(0, 0, 0, .6);
+  --t-acct: #f0a14a; --t-ev: #8197ff; --t-val: #3cc4b4; --t-ma: #b394ff; --t-lbo: #f472b6;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px;
+  display: flex; flex-direction: column; overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); flex: none;
+}
+.brand { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .01em; }
+.brand span { color: var(--accent); }
+.bar-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tally { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tally b { color: var(--good); font-weight: 500; }
+.tally i { color: var(--bad); font-style: normal; }
+.filter-btn {
+  border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 500; white-space: nowrap; display: flex; gap: 6px; align-items: center;
+}
+.filter-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+.feed {
+  flex: 1; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.feed::-webkit-scrollbar { display: none; }
+.slide {
+  height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+  padding: 14px 16px; display: flex; box-sizing: border-box;
+}
+.card {
+  flex: 1; min-width: 0; max-width: 560px; margin: 0 auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+.card::before { content: ""; height: 4px; background: var(--topic); flex: none; }
+.card-scroll { flex: 1; overflow-y: auto; padding: 18px 20px 12px; display: flex; flex-direction: column; gap: 16px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.meta .topic { color: var(--topic); font-weight: 500; }
+.meta .sep { opacity: .5; }
+.meta .flag { margin-left: auto; color: var(--bad); }
+.q { font-family: var(--display); font-weight: 600; font-size: clamp(22px, 6.2vw, 28px); line-height: 1.18; text-wrap: balance; margin: 0; }
+.kind-fact .q { font-size: clamp(20px, 5.6vw, 25px); }
+.ans { font-size: 15.5px; line-height: 1.55; color: var(--ink); display: flex; flex-direction: column; gap: 8px; }
+.ans p { margin: 0; }
+.ans ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.ans .num, .q .num { font-family: var(--mono); font-size: .92em; }
+.ans table { border-collapse: collapse; font-size: 14px; width: 100%; }
+.ans td { border-top: 1px solid var(--line); padding: 5px 6px 5px 0; vertical-align: top; }
+.ans td:first-child { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; padding-right: 10px; }
+.reveal {
+  margin-top: auto; align-self: stretch; border: 1.5px dashed var(--line); border-radius: 12px;
+  background: transparent; padding: 18px; color: var(--muted); font-weight: 500;
+}
+.reveal:hover { border-color: var(--accent); color: var(--accent); }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt {
+  text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 12px;
+  padding: 12px 14px; font-size: 15px; line-height: 1.35; display: flex; gap: 10px; align-items: baseline;
+}
+.opt .k { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.opt[disabled] { cursor: default; }
+.opt.right { border-color: var(--good); background: var(--good-bg); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.verdict { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.verdict.ok { color: var(--good); } .verdict.no { color: var(--bad); }
+
+.actions { flex: none; display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.act { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 11px 8px; font-weight: 600; font-size: 14px; }
+.act.miss.on, .act.miss:hover { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); }
+.act.got.on, .act.got:hover { border-color: var(--good); color: var(--good); background: var(--good-bg); }
+.act.save { width: 46px; display: grid; place-items: center; padding: 0; }
+.act.save svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.act.save.on { color: var(--accent); border-color: var(--accent); }
+.act.save.on svg { fill: currentColor; }
+.act[disabled] { opacity: .4; cursor: default; }
+.hint { position: absolute; left: 0; right: 0; bottom: 74px; text-align: center; font-size: 12px; color: var(--muted); pointer-events: none; animation: bob 1.8s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+
+.empty .card-scroll { justify-content: center; align-items: flex-start; }
+.empty-btn { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 12px 16px; font-weight: 600; }
+
+.shade { position: fixed; inset: 0; background: var(--sheet-shade); z-index: 10; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 11; background: var(--card);
+  border-radius: 20px 20px 0 0; border-top: 1px solid var(--line);
+  padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-height: 86%; overflow-y: auto;
+  max-width: 600px; margin: 0 auto; box-sizing: border-box;
+}
+.grab { width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 4px auto 12px; }
+.sheet h2 { font-family: var(--display); font-size: 22px; margin: 0 0 4px; }
+.sheet h3 { font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 18px 0 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+.chip .sw { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat { background: var(--bg); border-radius: 12px; padding: 10px; }
+.stat b { display: block; font-family: var(--mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.bars { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.brow { display: grid; grid-template-columns: 112px 1fr 48px; gap: 10px; align-items: center; font-size: 13px; }
+.brow .track { height: 6px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.brow .fill { height: 100%; background: var(--c); }
+.brow .pct { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.sheet-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+.link-btn { border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; padding: 8px 0; }
+.link-btn.danger { color: var(--bad); }
+.done-btn { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 12px 22px; font-weight: 600; }
+.note { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) { .hint { animation: none; } .feed { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="brand">Swipe<span>Techs</span></div>
+  <div class="bar-right">
+    <div class="tally" id="tally" aria-live="polite"></div>
+    <button class="filter-btn" id="openSheet" aria-haspopup="dialog"><span class="dot" id="modeDot"></span><span id="modeLabel">All topics</span></button>
+  </div>
+</header>
+<main class="feed" id="feed" aria-label="Question feed"></main>
+
+<div class="shade" id="shade" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-label="Filters and progress" hidden>
+  <div class="grab"></div>
+  <h2>Your feed</h2>
+  <h3>Show</h3>
+  <div class="chips" id="modeChips"></div>
+  <h3>Topics</h3>
+  <div class="chips" id="topicChips"></div>
+  <h3>Level</h3>
+  <div class="chips" id="levelChips"></div>
+  <h3>Progress</h3>
+  <div class="stats" id="stats"></div>
+  <div class="bars" id="bars"></div>
+  <p class="note">Cards you miss come back after a few swipes. Cards you get right come back less often each time. Progress is saved in this browser on this device.</p>
+  <div class="sheet-foot">
+    <button class="link-btn danger" id="reset">Reset progress</button>
+    <button class="done-btn" id="closeSheet">Back to feed</button>
+  </div>
+</section>
+
+<script>
+const TOPICS = {
+  acct: { name: "Accounting", color: "--t-acct" },
+  ev:   { name: "EV & Equity Value", color: "--t-ev" },
+  val:  { name: "Valuation & DCF", color: "--t-val" },
+  ma:   { name: "M&A", color: "--t-ma" },
+  lbo:  { name: "LBO", color: "--t-lbo" },
+};
+
+/* Card bank. t: q = tap to reveal, mc = multiple choice, f = quick fact. l: B basic, A advanced.
+   a/why accept light HTML. */
+const BANK = [
+// ---------- ACCOUNTING ----------
+{id:"a1",tp:"acct",l:"B",t:"q",q:"Walk me through the three financial statements.",a:`<p><b>Income statement:</b> revenue minus expenses over a period, ending in net income.</p><p><b>Balance sheet:</b> assets = liabilities + equity at a single point in time.</p><p><b>Cash flow statement:</b> starts with net income, adjusts for non-cash items and working capital, then adds investing and financing flows to get the net change in cash.</p>`},
+{id:"a2",tp:"acct",l:"B",t:"q",q:"How do the three statements link together?",a:`<ul><li>Net income from the IS is the first line of the CFS.</li><li>Net income (less dividends) flows into retained earnings on the BS.</li><li>Non-cash items and working capital changes on the CFS mirror BS changes.</li><li>Ending cash on the CFS becomes cash on the BS.</li></ul>`},
+{id:"a3",tp:"acct",l:"B",t:"mc",q:"Depreciation goes up by $10. Tax rate is 25%. What happens to cash?",o:["Cash falls by $10","Cash rises by $2.50","Cash falls by $7.50","No change"],c:1,why:`<p>IS: pre-tax income −10, net income −7.5. CFS: net income −7.5, add back depreciation +10, so cash <b>+2.5</b> (the tax shield). BS: cash +2.5, PP&amp;E −10, assets −7.5; retained earnings −7.5. Balanced.</p>`},
+{id:"a4",tp:"acct",l:"B",t:"q",q:"If you could use only one statement to judge a company, which would you pick?",a:`<p>The <b>cash flow statement</b>. It shows how much cash the business actually generates and uses, which is harder to dress up with accounting choices than earnings. Some answer the balance sheet, since with it plus one prior BS you can rebuild a lot, but CFS is the standard answer.</p>`},
+{id:"a5",tp:"acct",l:"B",t:"q",q:"Inventory goes up by $10, paid for in cash. Walk it through the statements.",a:`<p>IS: no change.</p><p>CFS: increase in inventory is a working capital use, cash from operations −10, so cash −10.</p><p>BS: cash −10, inventory +10. Assets unchanged; balanced.</p>`},
+{id:"a6",tp:"acct",l:"B",t:"mc",q:"Which of these is NOT added back in cash flow from operations?",o:["Depreciation & amortization","Stock-based compensation","Capital expenditures","Deferred taxes"],c:2,why:`<p>Capex is a cash outflow in <b>investing</b> activities. The others are non-cash items that reduced net income, so they are added back.</p>`},
+{id:"a7",tp:"acct",l:"B",t:"f",q:"Retained earnings roll-forward",a:`<p><span class="num">Ending RE = Beginning RE + Net income − Dividends</span></p><p>That is the bridge between the income statement and shareholders' equity.</p>`},
+{id:"a8",tp:"acct",l:"B",t:"q",q:"A company buys $100 of PP&E funded with $100 of new debt. What happens at the moment of purchase?",a:`<p>IS: nothing yet.</p><p>CFS: capex −100 in investing, debt issued +100 in financing. Net change in cash 0.</p><p>BS: PP&amp;E +100, debt +100. Balanced. Depreciation and interest only show up in later periods.</p>`},
+{id:"a9",tp:"acct",l:"A",t:"q",q:"A company accrues $10 of employee bonuses but hasn't paid them. Tax rate 25%.",a:`<p>IS: operating expense +10, net income −7.5.</p><p>CFS: net income −7.5, increase in accrued liabilities +10, cash <b>+2.5</b>.</p><p>BS: cash +2.5. Accrued liabilities +10, retained earnings −7.5, so L+E +2.5. Balanced.</p>`},
+{id:"a10",tp:"acct",l:"B",t:"mc",q:"Accounts receivable increases by $20. What happens to cash flow from operations, all else equal?",o:["Up $20","Down $20","No change","Down $15"],c:1,why:`<p>Revenue was booked but customers haven't paid. The increase in AR is subtracted on the CFS, so CFO falls by $20.</p>`},
+{id:"a11",tp:"acct",l:"B",t:"f",q:"Working capital",a:`<p><span class="num">WC = Current assets − Current liabilities</span></p><p>In models, <b>operating</b> working capital usually excludes cash and short-term debt: AR + inventory + prepaids − AP − accrued expenses − deferred revenue.</p>`},
+{id:"a12",tp:"acct",l:"A",t:"q",q:"Is negative working capital a bad sign?",a:`<p>Not necessarily. Retailers, restaurants and subscription businesses collect cash before they pay suppliers or deliver the service, so negative WC is a funding source. It is a red flag when it comes from stretching payables because the company can't pay its bills.</p>`},
+{id:"a13",tp:"acct",l:"B",t:"q",q:"What is goodwill and when does it get created?",a:`<p>Goodwill is created in an acquisition when the purchase price exceeds the fair value of the target's identifiable net assets. Under US GAAP it is not amortized for public companies; it is tested for impairment at least annually.</p>`},
+{id:"a14",tp:"acct",l:"A",t:"q",q:"A company writes down $100 of PP&E. Tax rate 25%. Walk it through.",a:`<p>IS: $100 impairment expense, net income −75.</p><p>CFS: net income −75, add back the non-cash write-down +100, cash <b>+25</b>.</p><p>BS: cash +25, PP&amp;E −100, assets −75. Retained earnings −75. Balanced.</p><p>In practice the tax benefit often shows up through deferred taxes rather than as cash saved today, but this is the standard interview answer.</p>`},
+{id:"a15",tp:"acct",l:"A",t:"q",q:"What creates a deferred tax liability?",a:`<p>When taxes on the books are higher than cash taxes paid today, because income is recognized for tax later than for book. The classic case is accelerated depreciation for tax and straight-line for book. The company owes the difference later, so it records a liability.</p>`},
+{id:"a16",tp:"acct",l:"B",t:"q",q:"A customer prepays $100 for a year of service. What happens?",a:`<p>IS: nothing yet. Revenue is recognized as the service is delivered.</p><p>CFS: increase in deferred revenue +100, cash +100.</p><p>BS: cash +100, deferred revenue (liability) +100.</p>`},
+{id:"a17",tp:"acct",l:"B",t:"q",q:"A company pays $10 of interest. Tax rate 25%.",a:`<p>IS: interest expense +10, net income −7.5.</p><p>CFS: cash −7.5.</p><p>BS: cash −7.5, retained earnings −7.5.</p><p>Repaying principal is different: it hits only the CFS (financing −) and BS (cash −, debt −), never the IS.</p>`},
+{id:"a18",tp:"acct",l:"A",t:"q",q:"Stock-based compensation of $10. Tax rate 25%.",a:`<p>IS: expense +10, net income −7.5.</p><p>CFS: net income −7.5, add back SBC +10, cash +2.5.</p><p>BS: cash +2.5. Equity: retained earnings −7.5, common stock/APIC +10, net +2.5. Balanced.</p>`},
+{id:"a19",tp:"acct",l:"A",t:"q",q:"$10 of PIK interest accrues on a note. Tax rate 25%.",a:`<p>IS: interest expense +10, net income −7.5.</p><p>CFS: net income −7.5, add back non-cash PIK +10, cash +2.5.</p><p>BS: cash +2.5. Debt +10 (interest is added to principal), retained earnings −7.5. Balanced.</p>`},
+{id:"a20",tp:"acct",l:"A",t:"mc",q:"Prices are rising. Compared with FIFO, LIFO gives…",o:["Higher net income and higher taxes","Lower COGS and higher inventory","Higher COGS, lower taxes, lower inventory","No difference"],c:2,why:`<p>LIFO expenses the newest, most expensive units first. COGS goes up, so taxable income and taxes fall, and older cheaper units stay in inventory. LIFO is allowed under US GAAP but not IFRS.</p>`},
+{id:"a21",tp:"acct",l:"B",t:"q",q:"How can a profitable company go bankrupt?",a:`<p>Profit isn't cash. A company can book revenue it hasn't collected, tie up cash in inventory or capex, or face a debt maturity it can't refinance. Running out of cash, not earnings, is what triggers default.</p>`},
+{id:"a22",tp:"acct",l:"B",t:"q",q:"A company pays a $20 dividend.",a:`<p>IS: nothing. Dividends are not an expense.</p><p>CFS: financing −20, cash −20.</p><p>BS: cash −20, retained earnings −20.</p>`},
+{id:"a23",tp:"acct",l:"A",t:"q",q:"How do operating leases show up under US GAAP (ASC 842) vs IFRS 16?",a:`<p>Both put a right-of-use asset and a lease liability on the balance sheet.</p><p><b>US GAAP operating lease:</b> one straight-line lease expense in operating costs, so EBITDA still bears rent.</p><p><b>IFRS 16:</b> split into depreciation and interest, so EBITDA is higher. Keep comps consistent when mixing the two.</p>`},
+{id:"a24",tp:"acct",l:"B",t:"f",q:"Free cash flow (levered)",a:`<p><span class="num">FCF = Cash flow from operations − Capex</span></p><p>It's what's left for debt repayment, dividends and buybacks after the business funds itself.</p>`},
+{id:"a25",tp:"acct",l:"A",t:"mc",q:"Inventory worth $10 is written down. Tax rate 25%. Change in cash?",o:["−$10","+$2.50","−$7.50","$0"],c:1,why:`<p>Net income −7.5, the write-down is non-cash so +10 is added back: cash +2.5. BS: inventory −10, cash +2.5, retained earnings −7.5.</p>`},
+{id:"a26",tp:"acct",l:"B",t:"f",q:"Accrual accounting",a:`<p>Revenue is recorded when earned and expenses when incurred, not when cash moves. That gap is exactly what working capital lines on the CFS reconcile.</p>`},
+
+// ---------- EV & EQUITY VALUE ----------
+{id:"e1",tp:"ev",l:"B",t:"q",q:"What's the difference between enterprise value and equity value?",a:`<p><b>Equity value</b> is the value of the company to shareholders only: diluted shares × share price.</p><p><b>Enterprise value</b> is the value of the core operating business to all capital providers: equity plus debt, preferred and noncontrolling interests, minus cash and other non-operating assets.</p>`},
+{id:"e2",tp:"ev",l:"B",t:"mc",q:"Pick the standard enterprise value formula.",o:["Equity value + cash − debt","Equity value + debt + preferred + NCI − cash","Equity value − debt + NCI","Market cap + total liabilities"],c:1,why:`<p>EV = equity value + debt + preferred stock + noncontrolling interest − cash (and other non-operating assets such as equity investments).</p>`},
+{id:"e3",tp:"ev",l:"B",t:"q",q:"Why do you subtract cash when calculating enterprise value?",a:`<p>Cash is a non-operating asset. EV is meant to value the core business, and a buyer who acquires the company also gets its cash, which effectively reduces the cost of buying the operations.</p>`},
+{id:"e4",tp:"ev",l:"B",t:"mc",q:"A company raises $100 of debt and keeps it as cash. What happens to EV?",o:["Up $100","Down $100","No change","Up $200"],c:2,why:`<p>Debt +100 and cash +100 offset. Equity value is also unchanged. EV only moves when the operating business changes.</p>`},
+{id:"e5",tp:"ev",l:"B",t:"mc",q:"A company issues $100 of new shares and holds the cash. Equity value and EV?",o:["Both up $100","Equity +$100, EV unchanged","EV +$100, equity unchanged","Both unchanged"],c:1,why:`<p>Equity value rises by 100 (more shares at the same price). EV = equity +100 − cash +100, so no change.</p>`},
+{id:"e6",tp:"ev",l:"A",t:"mc",q:"A company pays a $50 dividend. In theory, what happens?",o:["Equity −$50, EV unchanged","Both unchanged","EV −$50, equity unchanged","Both −$50"],c:0,why:`<p>Cash leaves shareholders' hands inside the company, so equity value falls by 50. EV = equity −50 − (cash −50) = no change.</p>`},
+{id:"e7",tp:"ev",l:"B",t:"q",q:"Can enterprise value be negative?",a:`<p>Yes. If cash exceeds equity value plus debt and other claims, EV is negative. You see it with cash-rich small caps or distressed companies the market expects to burn through their cash.</p>`},
+{id:"e8",tp:"ev",l:"A",t:"mc",q:"100 basic shares at $20. 10 options with a $10 strike. Diluted shares by treasury stock method?",o:["110","105","100","107.5"],c:1,why:`<p>Options are in the money. Exercise brings 10 × $10 = $100 of proceeds, which buys back 100 / 20 = 5 shares. Net new shares 10 − 5 = 5, so <b>105</b> diluted shares and $2,100 equity value.</p>`},
+{id:"e9",tp:"ev",l:"A",t:"q",q:"How do convertible bonds affect diluted shares and EV?",a:`<p>If the share price is above the conversion price, assume conversion: add the new shares to the diluted count and remove the bond from debt (if-converted method). If out of the money, leave it as debt. Never count it twice.</p>`},
+{id:"e10",tp:"ev",l:"B",t:"f",q:"Match the multiple to the metric",a:`<p>Metrics before interest (revenue, EBITDA, EBIT, unlevered FCF) belong to all capital providers, so pair them with <b>EV</b>.</p><p>Metrics after interest (net income, EPS, levered FCF) belong to shareholders, so pair them with <b>equity value</b>.</p>`},
+{id:"e11",tp:"ev",l:"B",t:"mc",q:"Which multiple is mismatched?",o:["EV / EBITDA","Price / Earnings","EV / Net income","EV / Revenue"],c:2,why:`<p>Net income is after interest, so it belongs to equity holders only. EV / net income mixes a numerator for all investors with a denominator for shareholders.</p>`},
+{id:"e12",tp:"ev",l:"A",t:"q",q:"Why do you add noncontrolling interest to enterprise value?",a:`<p>If a parent owns 70% of a subsidiary, it still consolidates 100% of the sub's revenue and EBITDA. Adding the 30% minority stake makes the numerator cover the same 100% the denominator does.</p>`},
+{id:"e13",tp:"ev",l:"A",t:"q",q:"Why subtract equity investments (associates) from enterprise value?",a:`<p>A minority stake (say 25%) isn't consolidated, so its revenue and EBITDA aren't in the company's numbers. Since EBITDA excludes it, EV should too. It's the mirror image of adding noncontrolling interest.</p>`},
+{id:"e14",tp:"ev",l:"B",t:"q",q:"Which is more affected by capital structure: EV or equity value?",a:`<p>Equity value. EV is, in theory, capital-structure neutral: swapping debt for equity changes the mix of claims, not the value of the operations. That's why EV multiples are preferred for comparing companies with different leverage.</p>`},
+{id:"e15",tp:"ev",l:"A",t:"f",q:"Debt-like items",a:`<p>Beyond bank debt and bonds, bankers often add unfunded pension obligations, capital/finance leases, and sometimes operating lease liabilities to EV. The rule: be consistent with what EBITDA already bears.</p>`},
+{id:"e16",tp:"ev",l:"B",t:"mc",q:"Share price $40, 50 diluted shares, $500 debt, $200 cash. Enterprise value?",o:["$2,000","$2,300","$2,700","$1,700"],c:1,why:`<p>Equity value = 40 × 50 = 2,000. EV = 2,000 + 500 − 200 = <b>2,300</b>.</p>`},
+{id:"e17",tp:"ev",l:"A",t:"mc",q:"A company uses $100 of cash to repay $100 of debt. What happens to EV?",o:["Down $100","Up $100","No change","Down $200"],c:2,why:`<p>Debt −100 and cash −100 cancel out in the EV bridge. Equity value is also unchanged.</p>`},
+
+// ---------- VALUATION & DCF ----------
+{id:"v1",tp:"val",l:"B",t:"q",q:"What are the main ways to value a company?",a:`<ul><li><b>Comparable companies</b>: trading multiples of similar public companies.</li><li><b>Precedent transactions</b>: multiples paid in past acquisitions.</li><li><b>DCF</b>: present value of projected cash flows.</li></ul><p>Others: LBO analysis, sum-of-the-parts, dividend discount model, liquidation value.</p>`},
+{id:"v2",tp:"val",l:"B",t:"mc",q:"Which method usually gives the highest valuation?",o:["Trading comps","Precedent transactions","Liquidation value","52-week trading range"],c:1,why:`<p>Precedents include a <b>control premium</b> and often synergies the buyer paid for. It's a tendency, not a rule; a DCF with aggressive assumptions can beat it.</p>`},
+{id:"v3",tp:"val",l:"B",t:"q",q:"Walk me through a DCF.",a:`<p>Project unlevered free cash flow for 5 to 10 years. Calculate a terminal value with either the perpetuity growth or exit multiple method. Discount the cash flows and terminal value at WACC and sum them to get enterprise value. Bridge to equity value (subtract net debt and other claims) and divide by diluted shares for an implied share price.</p>`},
+{id:"v4",tp:"val",l:"B",t:"f",q:"Unlevered free cash flow",a:`<p><span class="num">UFCF = EBIT × (1 − t) + D&amp;A − Capex − Δ NWC</span></p><p>It's the cash available to all capital providers, before any interest or debt repayment.</p>`},
+{id:"v5",tp:"val",l:"B",t:"f",q:"WACC",a:`<p><span class="num">WACC = E/(D+E) × Ke + D/(D+E) × Kd × (1 − t)</span></p><p>Add a preferred term if there is preferred stock. Use market values, not book values, for the weights.</p>`},
+{id:"v6",tp:"val",l:"B",t:"mc",q:"Risk-free rate 4%, beta 1.2, equity risk premium 5%. Cost of equity?",o:["9.0%","10.0%","10.8%","8.8%"],c:1,why:`<p>CAPM: 4% + 1.2 × 5% = <b>10%</b>.</p>`},
+{id:"v7",tp:"val",l:"A",t:"mc",q:"Final-year FCF $100, perpetual growth 3%, WACC 8%. Terminal value?",o:["$1,250","$2,000","$2,060","$3,433"],c:2,why:`<p>TV = FCF × (1 + g) / (WACC − g) = 100 × 1.03 / 0.05 = <b>$2,060</b>. Remember to discount it back to today.</p>`},
+{id:"v8",tp:"val",l:"A",t:"q",q:"How do you unlever and relever beta?",a:`<p><span class="num">βu = βL / (1 + (1 − t) × D/E)</span></p><p>Unlever each comp's observed beta to strip out its capital structure, take the median, then relever at your company's target D/E: <span class="num">βL = βu × (1 + (1 − t) × D/E)</span>.</p>`},
+{id:"v9",tp:"val",l:"A",t:"q",q:"Why discount unlevered FCF at WACC but levered FCF at cost of equity?",a:`<p>Match the cash flow to who it belongs to. Unlevered FCF goes to debt and equity holders, so use their blended return (WACC) and get enterprise value. Levered FCF is after interest and debt repayment, so it belongs to shareholders: use cost of equity and get equity value.</p>`},
+{id:"v10",tp:"val",l:"B",t:"mc",q:"WACC goes up. What happens to the DCF value?",o:["Goes up","Goes down","No change","Depends on growth only"],c:1,why:`<p>A higher discount rate shrinks the present value of every future cash flow, and especially the terminal value.</p>`},
+{id:"v11",tp:"val",l:"A",t:"q",q:"Why does adding some debt lower WACC, but too much debt raise it?",a:`<p>Debt is cheaper than equity (senior claim, and interest is tax-deductible), so at first it pulls WACC down. As leverage rises, default risk climbs: both the cost of debt and the cost of equity rise, eventually outweighing the benefit.</p>`},
+{id:"v12",tp:"val",l:"A",t:"mc",q:"Switching to the mid-year convention does what to DCF value?",o:["Lowers it","Raises it","No effect","Only changes terminal value"],c:1,why:`<p>Cash flows are assumed to arrive mid-year rather than at year-end, so each is discounted for half a year less. Value goes up slightly.</p>`},
+{id:"v13",tp:"val",l:"B",t:"q",q:"When would you not use a DCF?",a:`<p>When cash flows are unpredictable or negative (early-stage startups), or for banks and insurers, where debt is part of operations and working capital is meaningless. For banks you'd use P/E, P/TBV or a dividend discount model.</p>`},
+{id:"v14",tp:"val",l:"A",t:"f",q:"Sanity-check your terminal value",a:`<p>If you used an exit multiple, back out the implied growth rate:</p><p><span class="num">g = (TV × WACC − FCF) / (TV + FCF)</span></p><p>If you used perpetuity growth, back out the implied EV/EBITDA. Both should look reasonable next to comps and long-run GDP growth.</p>`},
+{id:"v15",tp:"val",l:"B",t:"q",q:"How do you pick comparable companies?",a:`<p>Same industry and business model first, then similar size, geography, growth and margins. Usually 5 to 10 names. Prefer fewer, truly comparable companies over a long loose list.</p>`},
+{id:"v16",tp:"val",l:"B",t:"mc",q:"Why might a company trade at a higher EV/EBITDA than its peers?",o:["Lower expected growth","Higher leverage","Higher growth or margins, lower risk","Larger share count"],c:2,why:`<p>Investors pay more per dollar of EBITDA for faster growth, better margins or more predictable cash flows. Leverage and share count don't change EV/EBITDA directly.</p>`},
+{id:"v17",tp:"val",l:"B",t:"f",q:"Terminal value is most of a DCF",a:`<p>Terminal value is often 60% to 80% of total enterprise value in a 5-year DCF. That's why small changes in growth rate or exit multiple swing the answer so much.</p>`},
+{id:"v18",tp:"val",l:"B",t:"mc",q:"Share price $30, EPS $2. P/E?",o:["6.7x","15x","20x","60x"],c:1,why:`<p>30 / 2 = <b>15x</b>.</p>`},
+{id:"v19",tp:"val",l:"A",t:"mc",q:"60% equity at 10%, 40% debt at 5% pre-tax, tax 25%. WACC?",o:["8.0%","7.5%","7.0%","6.5%"],c:1,why:`<p>0.6 × 10% = 6.0%. After-tax cost of debt 5% × 0.75 = 3.75%, × 0.4 = 1.5%. WACC = <b>7.5%</b>.</p>`},
+{id:"v20",tp:"val",l:"A",t:"q",q:"How do you value a bank?",a:`<p>Use equity-value methods: P/E, P/BV or P/TBV, and the dividend discount model. Debt is a bank's raw material, not financing, so EV, EBITDA and unlevered FCF don't mean much. Regulatory capital (CET1 ratio) drives how much can be paid out.</p>`},
+{id:"v21",tp:"val",l:"B",t:"f",q:"Football field",a:`<p>A chart of valuation ranges side by side: 52-week high/low, trading comps, precedents, DCF, LBO. Bankers use it to show where an offer price sits against each method.</p>`},
+{id:"v22",tp:"val",l:"A",t:"q",q:"Should you add back stock-based compensation in a DCF?",a:`<p>It's debated. SBC is non-cash, but it's a real cost: it dilutes shareholders instead of using cash. Many practitioners treat it as a cash expense (don't add it back). If you do add it back, you should reflect future dilution in the share count.</p>`},
+{id:"v23",tp:"val",l:"B",t:"mc",q:"After-tax cost of debt: 6% pre-tax yield, 25% tax rate.",o:["6.0%","4.5%","1.5%","7.5%"],c:1,why:`<p>6% × (1 − 0.25) = <b>4.5%</b>. Interest is tax-deductible, so debt is cheaper after tax.</p>`},
+{id:"v24",tp:"val",l:"B",t:"q",q:"What does the discount rate represent?",a:`<p>The return investors require for the risk they take, which is their opportunity cost. Riskier cash flows need a higher rate, which lowers their present value.</p>`},
+{id:"v25",tp:"val",l:"A",t:"q",q:"Exit multiple vs perpetuity growth: when would you use each?",a:`<p>Exit multiple is market-based and common in banking, since it mirrors how deals are priced. Perpetuity growth is more theoretical and better when the industry is mature and comps are scarce or distorted. Use one and cross-check with the other.</p>`},
+
+// ---------- M&A ----------
+{id:"m1",tp:"ma",l:"B",t:"q",q:"Why would a company buy another company?",a:`<ul><li>Growth it can't get organically (new markets, products, customers)</li><li>Synergies: cost savings or revenue upside</li><li>Market share or defensive reasons</li><li>Talent, technology or IP</li><li>Accretive to EPS or a cheaper valuation</li></ul>`},
+{id:"m2",tp:"ma",l:"B",t:"f",q:"Accretion / dilution",a:`<p>A deal is <b>accretive</b> if the buyer's pro forma EPS is higher than its standalone EPS, and <b>dilutive</b> if lower.</p>`},
+{id:"m3",tp:"ma",l:"B",t:"q",q:"Walk me through a merger model.",a:`<p>Project both companies' income statements. Set the purchase price and funding mix (cash, debt, stock). Combine them: add synergies, subtract foregone interest on cash used, add interest on new debt, and add new D&amp;A from asset write-ups. Divide pro forma net income by the new share count and compare to the buyer's standalone EPS.</p>`},
+{id:"m4",tp:"ma",l:"A",t:"mc",q:"All-stock deal. Buyer trades at 20x P/E, target is bought at 15x P/E. Accretive or dilutive?",o:["Accretive","Dilutive","Neutral","Can't tell"],c:0,why:`<p>In an all-stock deal, if the buyer's P/E is higher than the P/E paid for the target, the buyer gets more earnings per share issued: <b>accretive</b> (ignoring synergies and fees).</p>`},
+{id:"m5",tp:"ma",l:"A",t:"q",q:"How do you quickly tell if a deal is accretive?",a:`<p>Compare the weighted after-tax cost of funding with the target's earnings yield (inverse of the purchase P/E).</p><ul><li>Cash: foregone interest rate × (1 − t)</li><li>Debt: interest rate × (1 − t)</li><li>Stock: buyer's earnings yield (1 / buyer P/E)</li></ul><p>If target yield > cost of funding, it's accretive.</p>`},
+{id:"m6",tp:"ma",l:"A",t:"mc",q:"Buyer P/E 10x. New debt at 8%, tax 25%. Target bought at 12.5x P/E. Which funding is accretive?",o:["All-stock only","All-debt only","Both","Neither"],c:1,why:`<p>Target yield = 1/12.5 = 8%. Debt cost = 8% × 0.75 = 6% < 8%: accretive. Stock cost = 1/10 = 10% > 8%: dilutive.</p>`},
+{id:"m7",tp:"ma",l:"B",t:"q",q:"What are the types of synergies, and which do bankers trust more?",a:`<p><b>Cost synergies</b>: removing duplicate overhead, facilities, procurement savings. <b>Revenue synergies</b>: cross-selling, pricing, new channels. Cost synergies are more reliable because management controls them; revenue synergies depend on customers.</p>`},
+{id:"m8",tp:"ma",l:"A",t:"q",q:"How is goodwill calculated in an acquisition?",a:`<p>Goodwill = purchase price for equity − fair value of the target's identifiable net assets.</p><p>Fair value = book value of net assets + write-ups to PP&amp;E and new identifiable intangibles − the deferred tax liability created by those write-ups (in a stock deal).</p>`},
+{id:"m9",tp:"ma",l:"A",t:"q",q:"Asset deal vs stock deal: who prefers which?",a:`<p><b>Buyers</b> prefer asset deals: they get a tax step-up (future depreciation and amortization is tax-deductible) and can leave liabilities behind. <b>Sellers</b> usually prefer stock deals: simpler, liabilities go with the company, and a C-corp seller avoids double taxation. A 338(h)(10) election can give a stock deal asset-deal tax treatment.</p>`},
+{id:"m10",tp:"ma",l:"B",t:"f",q:"Control premium",a:`<p>Buyers of public companies typically pay a 20% to 40% premium over the undisturbed share price for control. It's why precedent transactions tend to value companies above trading comps.</p>`},
+{id:"m11",tp:"ma",l:"B",t:"mc",q:"Which funding source is usually the cheapest for the buyer?",o:["Cash on hand","New debt","New stock","They're always equal"],c:0,why:`<p>Interest income lost on cash is usually low, so cash is cheapest; then debt; then stock, which is usually most expensive. A buyer with a very high P/E can be an exception.</p>`},
+{id:"m12",tp:"ma",l:"B",t:"q",q:"Why would a buyer pay with stock instead of cash?",a:`<p>Its shares are highly valued, it lacks cash or debt capacity, or it wants target shareholders to share the risk and upside of the combined company. It's also tax-deferred for sellers in many structures.</p>`},
+{id:"m13",tp:"ma",l:"A",t:"q",q:"Can a dilutive deal still make sense?",a:`<p>Yes. EPS is one year's view. A deal can be dilutive at first and still add strategic value: faster growth, better market position, or synergies that take time to show up. Bankers often show when it turns accretive.</p>`},
+{id:"m14",tp:"ma",l:"A",t:"f",q:"Breakeven synergies",a:`<p>Pre-tax synergies needed to make a dilutive deal EPS-neutral:</p><p><span class="num">(Standalone EPS − Pro forma EPS) × Pro forma shares / (1 − t)</span></p>`},
+{id:"m15",tp:"ma",l:"A",t:"q",q:"Fixed vs floating exchange ratio?",a:`<p><b>Fixed</b>: target holders get a set number of buyer shares, so the deal value moves with the buyer's stock price, but ownership split is locked.</p><p><b>Floating</b>: the dollar value per target share is fixed and the number of shares adjusts, so ownership moves. Collars limit how far either can swing.</p>`},
+{id:"m16",tp:"ma",l:"A",t:"q",q:"What is a contribution analysis?",a:`<p>It compares how much revenue, EBITDA and net income each company contributes to the combined entity with the ownership each side gets. Used mainly in stock-for-stock mergers to argue whether the split is fair.</p>`},
+{id:"m17",tp:"ma",l:"A",t:"mc",q:"New intangibles from an acquisition are amortized. Effect on accretion?",o:["Makes it more accretive","Makes it more dilutive","No effect on EPS","Only affects cash EPS"],c:1,why:`<p>Amortization is an expense that lowers pro forma net income, so GAAP EPS falls. That's why companies also show "cash EPS" excluding it.</p>`},
+
+// ---------- LBO ----------
+{id:"l1",tp:"lbo",l:"B",t:"q",q:"Walk me through an LBO model.",a:`<p>Set the purchase price and fund it with debt and sponsor equity. Project the company's cash flows and use them to pay down debt. At exit (usually 3 to 7 years), apply an exit multiple to get EV, subtract remaining net debt for equity value, and compute IRR and multiple of money (MOIC) on the sponsor's equity.</p>`},
+{id:"l2",tp:"lbo",l:"B",t:"q",q:"Why use leverage in an LBO?",a:`<p>Debt means the sponsor writes a smaller equity check, so any increase in equity value is a bigger return on that check. Interest is also tax-deductible. The cost: more risk, since the company must service the debt.</p>`},
+{id:"l3",tp:"lbo",l:"B",t:"mc",q:"Which is the weakest LBO candidate?",o:["Stable cash flows, low capex","Strong market position","Cyclical, capex-heavy, thin margins","Clear cost-cutting opportunities"],c:2,why:`<p>A good LBO candidate can reliably service debt: stable, predictable cash flow, low capex, defensible position, room to improve margins, little existing debt, and a clear exit.</p>`},
+{id:"l4",tp:"lbo",l:"B",t:"f",q:"The three LBO return drivers",a:`<ul><li><b>EBITDA growth</b>: revenue growth and margin expansion</li><li><b>Multiple expansion</b>: exiting at a higher multiple than entry</li><li><b>Debt paydown</b>: cash flow reduces debt, so more of EV goes to equity</li></ul>`},
+{id:"l5",tp:"lbo",l:"A",t:"mc",q:"Buy at 10x $100 EBITDA with 60% debt. Pay down $200 of debt over 5 years. Exit at 10x $120 EBITDA. MOIC?",o:["1.5x","2.0x","2.5x","3.0x"],c:1,why:`<p>Entry: EV 1,000; debt 600; equity 400. Exit: EV 1,200; debt 400; equity 800. MOIC 800 / 400 = <b>2.0x</b>, about a 15% IRR over 5 years.</p>`},
+{id:"l6",tp:"lbo",l:"B",t:"f",q:"IRR rules of thumb",a:`<table><tr><td>2x / 3 yrs</td><td>≈ 26%</td></tr><tr><td>2x / 5 yrs</td><td>≈ 15%</td></tr><tr><td>3x / 3 yrs</td><td>≈ 44%</td></tr><tr><td>3x / 5 yrs</td><td>≈ 25%</td></tr><tr><td>2.5x / 5 yrs</td><td>≈ 20%</td></tr></table>`},
+{id:"l7",tp:"lbo",l:"A",t:"q",q:"What types of debt go into an LBO, from most to least senior?",a:`<ul><li><b>Revolver</b>: cheapest, drawn as needed</li><li><b>Term loans</b> (TLA amortizes, TLB mostly bullet): secured, floating rate</li><li><b>Senior notes / high-yield bonds</b>: fixed rate, fewer covenants</li><li><b>Subordinated / mezzanine</b>: higher rate, may include PIK or warrants</li></ul><p>Cost rises as seniority falls.</p>`},
+{id:"l8",tp:"lbo",l:"A",t:"mc",q:"Same 2.5x MOIC, but the hold goes from 4 to 6 years. IRR?",o:["Rises","Falls","Unchanged","Doubles"],c:1,why:`<p>MOIC ignores time; IRR doesn't. The same multiple earned over more years means a lower annual return (≈ 26% vs ≈ 16.5%).</p>`},
+{id:"l9",tp:"lbo",l:"A",t:"q",q:"What is a dividend recap and why do sponsors do it?",a:`<p>The company raises new debt and pays it out as a dividend to the sponsor. It returns cash early, which boosts IRR (MOIC barely changes), and de-risks the investment. The cost is higher leverage on the company.</p>`},
+{id:"l10",tp:"lbo",l:"A",t:"q",q:"Why might a sponsor choose less leverage than lenders offer?",a:`<p>More debt means higher interest, tighter covenants and a bigger risk of default if the business slips. When rates are high, the extra interest can wipe out the return benefit. Sponsors balance IRR against the risk of losing the whole equity check.</p>`},
+{id:"l11",tp:"lbo",l:"B",t:"mc",q:"Exit multiple goes up, all else equal. What happens to IRR?",o:["Up","Down","No change","Depends on debt"],c:0,why:`<p>Higher exit EV with the same debt means more equity value at exit, so IRR and MOIC both rise. That's multiple expansion.</p>`},
+{id:"l12",tp:"lbo",l:"A",t:"mc",q:"Sponsor puts in $200, gets $600 back after 3 years. Roughly what IRR?",o:["~26%","~33%","~44%","~60%"],c:2,why:`<p>3.0x in 3 years: 3^(1/3) − 1 ≈ <b>44%</b>.</p>`},
+{id:"l13",tp:"lbo",l:"A",t:"q",q:"Maintenance vs incurrence covenants?",a:`<p><b>Maintenance</b> covenants must be met every quarter (e.g. max leverage ratio). Common in bank loans. <b>Incurrence</b> covenants are only tested when the company takes an action like raising more debt or paying a dividend. Common in high-yield bonds and "cov-lite" loans.</p>`},
+{id:"l14",tp:"lbo",l:"B",t:"f",q:"IRR vs MOIC",a:`<p><b>MOIC</b> = equity out / equity in. Simple, ignores time.</p><p><b>IRR</b> = the annual discount rate that makes the NPV of the sponsor's cash flows zero. Rewards getting money back sooner.</p>`},
+{id:"l15",tp:"lbo",l:"A",t:"q",q:"How is an LBO used as a valuation method?",a:`<p>Solve for the maximum price a sponsor could pay and still hit its target IRR (often 20% to 25%) with available leverage. It sets a "floor" valuation: what a financial buyer would pay, usually below a strategic buyer who can count on synergies.</p>`},
+{id:"l16",tp:"lbo",l:"B",t:"mc",q:"In a typical LBO, what does the sponsor's equity usually represent?",o:["90%+ of the price","Roughly 30% to 60%","Nothing; it's all debt","Exactly 50% by law"],c:1,why:`<p>Equity checks have generally been 30% to 60% of the purchase price, higher when rates are high and credit is tight.</p>`},
+];
+
+const LEVELS = { B: "Basic", A: "Advanced" };
+const KIND = { q: "Question", mc: "Quiz", f: "Quick fact" };
+const byId = Object.fromEntries(BANK.map(c => [c.id, c]));
+
+// ---------- state ----------
+const KEY = "swipetechs.v1";
+let store = { rec: {}, saved: [], prefs: { topics: Object.keys(TOPICS), level: "all", mode: "feed" } };
+try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} };
+const rec = id => store.rec[id] || (store.rec[id] = { g: 0, m: 0, streak: 0, due: 0, last: null });
+
+let pos = 0;           // number of cards generated this session
+let recent = [];       // recent ids to avoid repeats
+let forced = [];       // {id, at} missed cards to reinsert
+
+function pool() {
+  const p = store.prefs;
+  let ids = BANK.filter(c => p.topics.includes(c.tp) && (p.level === "all" || c.l === p.level)).map(c => c.id);
+  if (p.mode === "saved") ids = ids.filter(id => store.saved.includes(id));
+  if (p.mode === "missed") ids = ids.filter(id => store.rec[id] && store.rec[id].last === "m");
+  return ids;
+}
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function nextId() {
+  const ids = pool();
+  if (!ids.length) return null;
+  const avoid = new Set(recent.slice(-Math.min(8, ids.length - 1)));
+  const fi = forced.findIndex(f => f.at <= pos && ids.includes(f.id) && !avoid.has(f.id));
+  if (fi > -1) return forced.splice(fi, 1)[0].id;
+  const ok = ids.filter(id => !avoid.has(id));
+  const unseen = shuffle(ok.filter(id => !store.rec[id] || store.rec[id].last === null));
+  const dueSeen = ok.filter(id => store.rec[id] && store.rec[id].last !== null && store.rec[id].due <= pos)
+    .sort((a, b) => (store.rec[b].last === "m") - (store.rec[a].last === "m") || store.rec[a].due - store.rec[b].due);
+  if (store.prefs.mode !== "feed") return shuffle(ok)[0];
+  if (dueSeen.length && (!unseen.length || Math.random() < 0.35)) return dueSeen[0];
+  if (unseen.length) return unseen[0];
+  const any = ok.slice().sort((a, b) => (store.rec[a]?.due ?? 0) - (store.rec[b]?.due ?? 0));
+  return any[Math.random() * Math.min(4, any.length) | 0];
+}
+
+function mark(id, result) {
+  const r = rec(id);
+  if (result === "g") { r.g++; r.streak++; r.due = pos + [8, 20, 45, 100][Math.min(r.streak - 1, 3)]; }
+  else { r.m++; r.streak = 0; r.due = pos + 5; forced = forced.filter(f => f.id !== id); forced.push({ id, at: pos + 4 }); }
+  r.last = result;
+  persist(); tally();
+}
+
+// ---------- rendering ----------
+const feed = document.getElementById("feed");
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const bookmark = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>`;
+
+function slideFor(id, idx) {
+  const c = byId[id];
+  const s = document.createElement("section");
+  s.className = "slide"; s.dataset.id = id;
+  const r = store.rec[id];
+  const flag = r && r.last === "m" ? `<span class="flag">Missed before</span>` : "";
+  const saved = store.saved.includes(id);
+  let body = "";
+  if (c.t === "q") body = `<div class="ans" hidden>${c.a}</div><button class="reveal">Tap to reveal the answer</button>`;
+  if (c.t === "f") body = `<div class="ans">${c.a}</div>`;
+  if (c.t === "mc") body = `<div class="opts">${c.o.map((o, i) => `<button class="opt" data-i="${i}"><span class="k">${"ABCD"[i]}</span><span>${esc(o)}</span></button>`).join("")}</div><div class="ans" hidden></div>`;
+  s.innerHTML = `<article class="card kind-${c.t === "f" ? "fact" : c.t}" style="--topic: var(${TOPICS[c.tp].color})">
+    <div class="card-scroll">
+      <div class="meta"><span class="topic">${TOPICS[c.tp].name}</span><span class="sep">/</span><span>${LEVELS[c.l]}</span><span class="sep">/</span><span>${KIND[c.t]}</span>${flag}</div>
+      <h2 class="q">${esc(c.q)}</h2>
+      ${body}
+    </div>
+    <div class="actions">
+      <button class="act miss" ${c.t === "q" ? "disabled" : ""} ${c.t === "mc" ? "hidden" : ""}>Missed it</button>
+      <button class="act got" ${c.t === "q" ? "disabled" : ""} ${c.t === "mc" ? "hidden" : ""}>Got it</button>
+      <button class="act save ${saved ? "on" : ""}" aria-pressed="${saved}" aria-label="Save card">${bookmark}</button>
+    </div>
+    ${idx === 0 ? `<div class="hint">Swipe up for the next card</div>` : ""}
+  </article>`;
+  if (c.t === "mc") {
+    const acts = s.querySelector(".actions");
+    acts.style.gridTemplateColumns = "1fr auto";
+    const v = document.createElement("div"); v.className = "verdict"; v.style.alignSelf = "center"; v.textContent = "Pick an answer";
+    acts.prepend(v);
+  }
+  return s;
+}
+
+function emptySlide() {
+  const s = document.createElement("section");
+  s.className = "slide empty";
+  const mode = store.prefs.mode;
+  const msg = mode === "saved" ? "No saved cards yet. Tap the bookmark on any card to save it here."
+    : mode === "missed" ? "Nothing missed in this selection. Nice." : "No cards match these filters.";
+  s.innerHTML = `<article class="card" style="--topic: var(--accent)"><div class="card-scroll"><h2 class="q">${msg}</h2><button class="empty-btn">Change filters</button></div></article>`;
+  s.querySelector(".empty-btn").onclick = openSheet;
+  return s;
+}
+
+function append(n) {
+  for (let i = 0; i < n; i++) {
+    const id = nextId();
+    if (!id) { if (!feed.children.length) feed.append(emptySlide()); return; }
+    feed.append(slideFor(id, pos));
+    recent.push(id); if (recent.length > 30) recent.shift();
+    pos++;
+  }
+  // keep the DOM light on long sessions
+  while (feed.children.length > 80 && feed.scrollTop > feed.children[0].offsetHeight * 3) {
+    const h = feed.children[0].offsetHeight; feed.children[0].remove(); feed.scrollTop -= h;
+  }
+}
+
+function rebuild() {
+  feed.innerHTML = ""; recent = []; feed.scrollTop = 0;
+  append(6);
+  tally(); modeLabel();
+}
+
+feed.addEventListener("scroll", () => {
+  if (feed.scrollTop + feed.clientHeight * 3 > feed.scrollHeight) append(4);
+}, { passive: true });
+
+feed.addEventListener("click", e => {
+  const slide = e.target.closest(".slide"); if (!slide || !slide.dataset.id) return;
+  const id = slide.dataset.id, c = byId[id];
+  const ans = slide.querySelector(".ans");
+  if (e.target.closest(".reveal")) {
+    ans.hidden = false; e.target.closest(".reveal").remove();
+    slide.querySelectorAll(".act.miss, .act.got").forEach(b => b.disabled = false);
+    return;
+  }
+  const opt = e.target.closest(".opt");
+  if (opt && !opt.disabled) {
+    const i = +opt.dataset.i, right = i === c.c;
+    slide.querySelectorAll(".opt").forEach(b => { b.disabled = true; if (+b.dataset.i === c.c) b.classList.add("right"); });
+    if (!right) opt.classList.add("wrong");
+    ans.innerHTML = c.why; ans.hidden = false;
+    const v = slide.querySelector(".verdict");
+    v.textContent = right ? "Correct" : "Not quite"; v.className = "verdict " + (right ? "ok" : "no");
+    mark(id, right ? "g" : "m");
+    return;
+  }
+  const act = e.target.closest(".act");
+  if (!act || act.disabled) return;
+  if (act.classList.contains("save")) {
+    const on = !store.saved.includes(id);
+    store.saved = on ? [...store.saved, id] : store.saved.filter(x => x !== id);
+    document.querySelectorAll(`.slide[data-id="${id}"] .act.save`).forEach(b => { b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+    persist(); return;
+  }
+  const res = act.classList.contains("got") ? "g" : "m";
+  slide.querySelectorAll(".act.miss, .act.got").forEach(b => { b.classList.remove("on"); b.disabled = true; });
+  act.classList.add("on");
+  mark(id, res);
+  setTimeout(() => { const nx = slide.nextElementSibling; if (nx) nx.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }, 280);
+});
+
+document.addEventListener("keydown", e => {
+  if (!sheet.hidden) { if (e.key === "Escape") closeSheet(); return; }
+  if (["ArrowDown", "j", "PageDown"].includes(e.key)) { feed.scrollBy({ top: feed.clientHeight, behavior: "smooth" }); e.preventDefault(); }
+  if (["ArrowUp", "k", "PageUp"].includes(e.key)) { feed.scrollBy({ top: -feed.clientHeight, behavior: "smooth" }); e.preventDefault(); }
+});
+
+// ---------- tally, sheet ----------
+function counts(ids) {
+  let seen = 0, mastered = 0, missed = 0;
+  ids.forEach(id => { const r = store.rec[id]; if (!r || r.last === null) return; seen++; if (r.last === "m") missed++; else if (r.streak >= 2) mastered++; });
+  return { seen, mastered, missed, total: ids.length };
+}
+function tally() {
+  const c = counts(BANK.map(b => b.id));
+  document.getElementById("tally").innerHTML = `<b>${c.mastered}</b> solid · <i>${c.missed}</i> to fix`;
+}
+function modeLabel() {
+  const p = store.prefs;
+  const t = p.topics.length === 5 ? "All topics" : p.topics.length === 1 ? TOPICS[p.topics[0]].name : `${p.topics.length} topics`;
+  const m = p.mode === "saved" ? "Saved" : p.mode === "missed" ? "Missed" : t;
+  document.getElementById("modeLabel").textContent = m + (p.level !== "all" && p.mode === "feed" ? ` · ${LEVELS[p.level]}` : "");
+}
+
+const sheet = document.getElementById("sheet"), shade = document.getElementById("shade");
+function chip(label, pressed, onClick, color) {
+  const b = document.createElement("button");
+  b.className = "chip"; b.setAttribute("aria-pressed", pressed);
+  b.innerHTML = (color ? `<span class="sw" style="--c: var(${color})"></span>` : "") + esc(label);
+  b.onclick = onClick; return b;
+}
+function drawSheet() {
+  const p = store.prefs;
+  const mc = document.getElementById("modeChips"); mc.innerHTML = "";
+  [["feed", "Everything"], ["missed", "Missed cards"], ["saved", `Saved (${store.saved.length})`]].forEach(([k, l]) =>
+    mc.append(chip(l, p.mode === k, () => { p.mode = k; drawSheet(); dirty = true; })));
+  const tc = document.getElementById("topicChips"); tc.innerHTML = "";
+  Object.entries(TOPICS).forEach(([k, t]) => tc.append(chip(t.name, p.topics.includes(k), () => {
+    p.topics = p.topics.includes(k) ? p.topics.filter(x => x !== k) : [...p.topics, k];
+    if (!p.topics.length) p.topics = [k];
+    drawSheet(); dirty = true;
+  }, t.color)));
+  const lc = document.getElementById("levelChips"); lc.innerHTML = "";
+  [["all", "Both"], ["B", "Basic"], ["A", "Advanced"]].forEach(([k, l]) => lc.append(chip(l, p.level === k, () => { p.level = k; drawSheet(); dirty = true; })));
+  const all = counts(BANK.map(b => b.id));
+  document.getElementById("stats").innerHTML = [["Cards", all.total], ["Seen", all.seen], ["Solid", all.mastered], ["To fix", all.missed]]
+    .map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+  document.getElementById("bars").innerHTML = Object.entries(TOPICS).map(([k, t]) => {
+    const c = counts(BANK.filter(b => b.tp === k).map(b => b.id));
+    const pct = Math.round(100 * c.mastered / c.total);
+    return `<div class="brow"><span>${t.name.replace(" & Equity Value", " / Equity")}</span><div class="track"><div class="fill" style="--c: var(${t.color}); width:${pct}%"></div></div><span class="pct">${c.mastered}/${c.total}</span></div>`;
+  }).join("");
+}
+let dirty = false;
+function openSheet() { dirty = false; drawSheet(); sheet.hidden = false; shade.hidden = false; document.getElementById("closeSheet").focus(); }
+function closeSheet() { sheet.hidden = true; shade.hidden = true; persist(); if (dirty) rebuild(); else modeLabel(); }
+document.getElementById("openSheet").onclick = openSheet;
+document.getElementById("closeSheet").onclick = closeSheet;
+shade.onclick = closeSheet;
+let armed = false;
+document.getElementById("reset").onclick = e => {
+  if (!armed) { armed = true; e.target.textContent = "Tap again to erase all progress"; setTimeout(() => { armed = false; e.target.textContent = "Reset progress"; }, 3000); return; }
+  store.rec = {}; store.saved = []; forced = []; persist(); armed = false; e.target.textContent = "Progress reset"; drawSheet(); dirty = true; tally();
+};
+
+rebuild();
+</script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});</script>
+</body>
+</html>
