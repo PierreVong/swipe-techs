@@ -552,3 +552,22 @@ body.in-chill #goalBtn, body.in-chill #streak { display: none; }
 @keyframes likepop { 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 60% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .likepop { animation-duration: .01s; } }
 .viz.bars .neg .wt i { background: var(--bad); }
+
+/* Chill round 2: headline numbers, myth claims, on-card Rabbit hole, connected runs, one-time double-tap hint */
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat b { font-family: var(--display); font-weight: 700; font-size: clamp(40px, 12vw, 54px); line-height: 1; color: var(--topic); letter-spacing: -.02em; }
+.stat span { font-size: 13.5px; color: var(--muted); }
+.has-stat .hook { font-size: clamp(19px, 5.4vw, 25px); }
+.hook.claim { font-style: italic; font-weight: 500; }
+.t-myth .verdict-pill { font-size: 12.5px; }
+.rh-chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed color-mix(in srgb, var(--topic) 45%, var(--line)); background: transparent; color: var(--ink); font-size: 13.5px; font-weight: 600; }
+.rh-chip small { font-weight: 400; color: var(--muted); }
+button.badge.rh-exit { border: 0; font: inherit; font-family: var(--body); font-size: 11.5px; font-weight: 600; padding: 3px 10px; margin: -2px 0; min-height: 26px; cursor: pointer; }
+.badge.link { color: var(--ink); background: color-mix(in srgb, var(--topic) 14%, var(--raise)); }
+.tip-dt { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 32px); padding: 12px 16px; border-radius: 16px; background: color-mix(in srgb, var(--raise) 92%, #000); border: 1px solid color-mix(in srgb, var(--topic) 40%, var(--line)); box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: 14.5px; font-weight: 600; line-height: 1.3; animation: tipin .35s ease-out; transition: opacity .35s ease; }
+.tip-dt small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.tip-dt .taps { font-size: 26px; animation: dtap 1.4s ease-in-out .3s 3; }
+.tip-dt.out { opacity: 0; }
+@keyframes tipin { from { opacity: 0; transform: translate(-50%, 10px); } }
+@keyframes dtap { 0%, 40%, 100% { transform: scale(1); } 15%, 30% { transform: scale(.82); } }
+@media (prefers-reduced-motion: reduce) { .tip-dt, .tip-dt .taps { animation: none; } }

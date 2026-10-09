@@ -82,7 +82,7 @@ test("a store saved by the first Chill release loads with the new fields and kee
   store.setItem(C.KEY, JSON.stringify({ v: 1, seen: { a: { n: 2, t: T0 } }, bm: ["a"], cats: ["lbo"] }));
   const c = C.load(store);
   assert.equal(c.seen.a.n, 2); assert.deepEqual(c.bm, ["a"]); assert.deepEqual(c.cats, ["lbo"]);
-  assert.deepEqual(c.like, {}); assert.deepEqual(c.int, {}); assert.equal(c.pos, null); assert.deepEqual(c.recent, []);
+  assert.deepEqual(c.like, {}); assert.deepEqual(c.int, {}); assert.equal(c.pos, null); assert.deepEqual(c.recent, []); assert.deepEqual(c.tips, {});
 });
 
 test("reopening Chill within 12 hours resumes on the last card without repeating the session", () => {
@@ -96,7 +96,7 @@ test("reopening Chill within 12 hours resumes on the last card without repeating
 test("the next card avoids the topics, card types and concepts just shown", () => {
   const c = C.blank();
   for (let k = 0; k < 30; k++) {
-    const id = C.pick(c, tids, { now: T0, session: ["w1"], rnd: Math.random, meta: tagged });
+    const id = C.pick(c, tids, { now: T0, session: ["w1"], rnd: () => 0.5 + Math.random() / 2, meta: tagged });   // no connected run this time
     assert.ok(tagged[id].c !== "dcf" && tagged[id].t !== "concept" && !tagged[id].k.includes("wacc"), id);
   }
 });
@@ -127,4 +127,19 @@ test("Rabbit hole lists concepts that share a tag, closest and unseen first", ()
   C.markSeen(c, "w1", T0);
   assert.deepEqual(C.related(c, "w2", tids, tagged, 1), ["w3"], "unseen first among equally close concepts");
   assert.deepEqual(C.related(c, "g1", tids, tagged), []);
+});
+
+test("now and then the next card builds on the last one, in runs of at most three", () => {
+  const c = C.blank();
+  assert.equal(C.runLength(["w1", "w2", "w3", "l1"], tagged), 1);
+  assert.equal(C.runLength(["l1", "w1", "w2", "w3"], tagged), 3);
+  const next = C.pick(c, tids, { now: T0, session: ["w1"], rnd: () => 0.1, meta: tagged });
+  assert.ok(C.linked(tagged.w1, tagged[next]), `connected pick ${next}`);
+  // A run of three never grows: the picker goes back to varied, unconnected concepts.
+  const after = C.pick(c, [...tids, "w4"], { now: T0, session: ["w1", "w2", "w3"], rnd: () => 0.1, meta: { ...tagged, w4: { c: "ev", t: "real", x: "numbers", k: ["cost-of-equity"] } } });
+  assert.ok(!["w4"].includes(after), `run of three stops (${after})`);
+  // Runs only use unseen concepts.
+  C.markSeen(c, "w2", T0 - 3 * DAY); C.markSeen(c, "w3", T0 - 3 * DAY);
+  const r = C.pick(c, tids, { now: T0, session: ["w1"], rnd: () => 0.21, meta: tagged });   // above the resurfacing share, below the run chance
+  assert.ok(!["w2", "w3"].includes(r), `seen concepts don't extend a run (${r})`);
 });
