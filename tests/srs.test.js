@@ -161,7 +161,7 @@ test("Stats: today, mastery by category, weakest topics", () => {
 
 test("Rating hints match the schedule", () => {
   const s = S.blankState();
-  assert.deepEqual(S.preview(s, "new", T0), ["~4 cards", "~13 cards", "tomorrow"]);
+  assert.deepEqual(S.preview(s, "new", T0), ["≈4 cards", "≈13 cards", "tomorrow"]);
   S.rate(s, "x", 2, T0, 1);
   const p = S.preview(s, "x", S.get(s, "x").dueT + 3600e3);
   assert.equal(p[2], "3 days");

@@ -1,6 +1,6 @@
 // Offline support. App files: network first (so updates show up right away), cache as fallback.
 // Google Fonts: cache first.
-const CACHE = "swipetechs-v2";
+const CACHE = "swipetechs-v3";
 const CORE = [
   "./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
   "css/app.css", "js/srs.js", "js/app.js",

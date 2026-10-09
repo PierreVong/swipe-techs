@@ -42,6 +42,18 @@ test("numbers and three-statement cards carry a worked example or are pure arith
   assert.deepEqual(withoutEx, [], "3-statement cards need the statement table");
 });
 
+test("Quick answers lead with one short sentence; typed answers are well formed", () => {
+  for (const q of QB) {
+    assert.match(q.quick.trim(), /^<p>/, `${q.id} quick starts with a lead paragraph`);
+    if (q.n) {
+      assert.ok(q.k === "math" && !q.o, `${q.id}: typed answers are for open number questions`);
+      assert.ok(Number.isFinite(q.n.v), `${q.id} n.v`);
+      assert.ok(["%", "x", "$", ""].includes(q.n.u), `${q.id} n.u`);
+    }
+    if (q.o) q.o.forEach(o => assert.ok(!/^~/.test(o), `${q.id}: use ≈ for approximate options`));
+  }
+});
+
 test("Top 100 has exactly 100 cards across all categories", () => {
   const top = QB.filter(q => q.top);
   assert.equal(top.length, 100);

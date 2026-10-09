@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Swipe Techs</title>
 <meta name="description" content="Doomscroll investment banking technicals: a swipe feed with spaced repetition.">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,12 +23,13 @@
 <header class="bar">
   <div class="brand">Swipe<span>Techs</span></div>
   <div class="bar-right">
-    <button class="goal" id="goalBtn" aria-label="Daily goal and progress">
+    <button class="pill goal" id="goalBtn" aria-label="Daily goal and progress">
       <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="goal-track" cx="18" cy="18" r="15"/><circle class="goal-fill" id="goalFill" cx="18" cy="18" r="15"/></svg>
-      <span class="goal-num" id="goalNum">0</span>
+      <span class="goal-txt"><b id="goalNum">0</b>/20</span>
     </button>
-    <div class="streak" id="streak" title="Daily streak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-9.5z"/></svg><span id="streakNum">0</span></div>
-    <button class="icon-btn" id="collectionsBtn" aria-label="Collections: bookmarks and Top 100"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+    <button class="pill streak" id="streak" aria-label="Daily streak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-9.5z"/></svg><span id="streakNum">0</span></button>
+    <button class="icon-btn" id="collectionsBtn" aria-label="Saved: bookmarks and Top 100" title="Saved: bookmarks and Top 100"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h11v16l-5.5-3.5L8 19z"/><path d="M5 6v15l5-3"/></svg></button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.2l.4-1.2h2.6l.4 1.2a1.6 1.6 0 0 0 2.2 1l1.1-.6 1.8 1.8-.6 1.1a1.6 1.6 0 0 0 1 2.2l1.2.4v2.6l-1.2.4a1.6 1.6 0 0 0-1 2.2l.6 1.1-1.8 1.8-1.1-.6a1.6 1.6 0 0 0-2.2 1l-.4 1.2h-2.6l-.4-1.2a1.6 1.6 0 0 0-2.2-1l-1.1.6-1.8-1.8.6-1.1a1.6 1.6 0 0 0-1-2.2L2 13.3v-2.6l1.2-.4a1.6 1.6 0 0 0 1-2.2l-.6-1.1 1.8-1.8 1.1.6a1.6 1.6 0 0 0 2.2-1z"/><circle cx="12" cy="12" r="3"/></svg></button>
   </div>
 </header>
 <div class="ctx" id="ctx" hidden><span id="ctxLabel"></span><button class="ctx-btn" id="ctxBtn">Change</button></div>
@@ -36,7 +37,7 @@
 <nav class="tabs" aria-label="Study modes">
   <button class="tab" data-mode="foryou" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>For You</span></button>
   <button class="tab" data-mode="topic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z"/></svg><span>Topics</span></button>
-  <button class="tab" data-mode="weak"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z M12 9v5 M12 16.5v.5"/></svg><span>Weak</span></button>
+  <button class="tab" data-mode="weak" title="Review the questions you missed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg><span>Review</span></button>
   <button class="tab" data-mode="interview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Interview</span></button>
   <button class="tab" data-mode="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Progress</span></button>
 </nav>
@@ -46,20 +47,20 @@
 <section class="sheet" id="topicSheet" role="dialog" aria-modal="true" aria-labelledby="topicTitle" hidden>
   <div class="grab"></div>
   <h2 id="topicTitle">Topic Focus</h2>
-  <p class="note">Pick categories and levels. Cards due for review come first, then new ones.</p>
-  <h3>Categories</h3>
-  <div class="chips" id="catChips"></div>
+  <p class="note">Choose topics and levels. Due reviews come first, then new questions.</p>
+  <h3>Topics</h3>
+  <div class="chips roomy" id="catChips"></div>
   <h3>Level</h3>
-  <div class="chips" id="lvlChips"></div>
-  <div class="sheet-foot">
-    <span class="count" id="topicCount"></span>
+  <div class="chips roomy" id="lvlChips"></div>
+  <div class="sheet-foot topic-foot">
+    <div class="tsum"><b id="topicSel"></b><span class="count" id="topicCount"></span></div>
     <button class="primary" id="topicStart">Start</button>
   </div>
 </section>
 
 <section class="sheet" id="collSheet" role="dialog" aria-modal="true" aria-labelledby="collTitle" hidden>
   <div class="grab"></div>
-  <h2 id="collTitle">Collections</h2>
+  <h2 id="collTitle">Saved</h2>
   <div class="coll-list">
     <button class="coll" id="collTop"><span class="coll-name">Top 100</span><span class="coll-sub" id="collTopSub">The most-asked IB technicals</span></button>
     <button class="coll" id="collBm"><span class="coll-name">Bookmarks</span><span class="coll-sub" id="collBmSub">Cards you saved</span></button>
@@ -71,21 +72,36 @@
   <div class="grab"></div>
   <h2 id="progTitle">Progress</h2>
   <div id="dash"></div>
+  <div class="sheet-foot">
+    <button class="ghost" id="toSettings">Settings</button>
+    <button class="primary" data-close>Back to studying</button>
+  </div>
+</section>
+
+<section class="sheet" id="setSheet" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
+  <div class="grab"></div>
+  <h2 id="setTitle">Settings</h2>
   <h3>Appearance</h3>
   <div class="chips" id="themeChips"></div>
-  <h3>Keyboard shortcuts</h3>
-  <table class="keys">
-    <tr><td><kbd>Space</kbd></td><td>Reveal answer</td></tr>
-    <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Didn't know / Partially / Nailed it (or pick a quiz option 1–4)</td></tr>
-    <tr><td><kbd>↓</kbd> <kbd>J</kbd> · <kbd>↑</kbd> <kbd>K</kbd></td><td>Next / previous card</td></tr>
-    <tr><td><kbd>E</kbd> · <kbd>X</kbd> · <kbd>D</kbd></td><td>Explanation · Example · Go deeper</td></tr>
-    <tr><td><kbd>B</kbd></td><td>Bookmark</td></tr>
-    <tr><td><kbd>Esc</kbd></td><td>Close panels</td></tr>
-  </table>
-  <p class="note">Spacing: Didn't know brings a card back in 3–5 cards, Partially in 10–15, Nailed it tomorrow, then 3, 7, 14 and 30 days. Cards you keep missing come back sooner. A card counts as mastered after you nail it on 3 separate days. Progress is saved on this device.</p>
+  <h3>Interview timer</h3>
+  <div class="chips" id="timerChips"></div>
+  <h3>How spacing works</h3>
+  <p class="note">Didn't know brings a card back in 3–5 cards, Partially in 10–15, Nailed it tomorrow, then 3, 7, 14 and 30 days. Cards you keep missing come back sooner. A card counts as mastered after you nail it on 3 separate days. Progress is saved on this device.</p>
+  <div class="kbd-only">
+    <h3>Keyboard shortcuts</h3>
+    <table class="keys">
+      <tr><td><kbd>Space</kbd></td><td>Reveal answer</td></tr>
+      <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Didn't know / Partially / Nailed it (or pick a quiz option 1–4)</td></tr>
+      <tr><td><kbd>↓</kbd> <kbd>J</kbd> · <kbd>↑</kbd> <kbd>K</kbd></td><td>Next / previous card</td></tr>
+      <tr><td><kbd>E</kbd> · <kbd>X</kbd> · <kbd>D</kbd></td><td>Explanation · Example · Go deeper</td></tr>
+      <tr><td><kbd>Enter</kbd></td><td>Type a number (Interview)</td></tr>
+      <tr><td><kbd>B</kbd></td><td>Bookmark</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Close panels</td></tr>
+    </table>
+  </div>
   <div class="sheet-foot">
     <button class="link danger" id="reset">Reset progress</button>
-    <button class="primary" data-close>Back to feed</button>
+    <button class="primary" data-close>Done</button>
   </div>
 </section>
 
