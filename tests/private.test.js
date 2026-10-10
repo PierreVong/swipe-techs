@@ -113,3 +113,19 @@ test("similar questions are linked both ways and blocked right after each other"
   assert.deepEqual([...P.blocked(m, ["pv-ev-b01"])], ["e1"]);
   assert.equal(P.blocked(m, []).size, 0);
 });
+
+test("mixed sections: new questions interleave sections, each in guide order", () => {
+  const cards = [];
+  for (let i = 1; i <= 80; i++) cards.push({ id: "acct" + i, c: "acct" });
+  for (let i = 1; i <= 20; i++) cards.push({ id: "ev" + i, c: "ev" });
+  for (let i = 1; i <= 40; i++) cards.push({ id: "lbo" + i, c: "lbo" });
+  const o = P.mixOrder(cards);
+  const first = cards.slice().sort((a, b) => o[a.id] - o[b.id]).slice(0, 14).map(q => q.c);
+  assert.ok(new Set(first).size === 3, "all sections show up early: " + first.join(","));
+  assert.ok(first.filter(c => c === "acct").length <= 9, "the biggest section doesn't crowd the rest out");
+  ["acct", "ev", "lbo"].forEach(c => {
+    const ids = cards.filter(q => q.c === c).map(q => q.id);
+    assert.deepEqual(ids.slice().sort((a, b) => o[a] - o[b]), ids, c + " keeps guide order");
+  });
+  Object.values(o).forEach(v => assert.ok(v >= 0 && v < 1));
+});
