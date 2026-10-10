@@ -47,8 +47,9 @@
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
   const ORDER = {};
   BANK.slice().sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || a.l - b.l || hash(a.id) - hash(b.id)).forEach((q, i) => { ORDER[q.id] = i / BANK.length; });
-  // Private questions keep the guide's order, spread evenly among the built-in ones when both are on.
-  PBANK.forEach((q, i) => { ORDER[q.id] = (i + 0.5) / PBANK.length; });
+  // Private questions keep the guide's order within each section, with the sections interleaved
+  // (so "all topics" mixes them) and spread evenly among the built-in ones when both are on.
+  Object.assign(ORDER, P.mixOrder(PBANK));
 
   // Question source: built-in (core), the private collection (priv) or both.
   const src = () => PBANK.length && (st.prefs.src === "priv" || st.prefs.src === "both") ? st.prefs.src : "core";

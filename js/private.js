@@ -138,6 +138,17 @@
   function advance(cur, q) { const k = secKey(q); cur[k] = Math.max(cur[k] || 0, q.order); return cur; }
   function restart(cur, cards) { cards.forEach(q => { delete cur[secKey(q)]; }); return cur; }
 
+  /* Order for introducing new questions when several sections are mixed (For You, Topics, Spaced repetition):
+     each section keeps the guide's order, and the sections are interleaved by how far through each one you are,
+     so "all topics" doesn't mean the whole first section first. Returns id -> position in [0, 1). */
+  function mixOrder(cards) {
+    const by = {};
+    cards.forEach(q => (by[q.c] = by[q.c] || []).push(q));
+    const keys = Object.keys(by), out = {};
+    keys.forEach((c, k) => by[c].forEach((q, i) => { out[q.id] = (i + (k + 0.5) / keys.length) / by[c].length; }));
+    return out;
+  }
+
   /* Questions marked as similar (private <-> built-in), both directions. */
   function simMap(cards) {
     const m = {};
@@ -192,7 +203,7 @@
     return Promise.race([read, late]).catch(e => ({ coll: null, status: "error", error: String(e && e.message || e) }));
   }
 
-  const api = { FORMAT, CATS, PATHS, validate, toCards, rich, inline, inFilter, secKey, seqNext, advance, restart, simMap, blocked, save, remove, load };
+  const api = { FORMAT, CATS, PATHS, validate, toCards, rich, inline, inFilter, secKey, seqNext, advance, restart, simMap, blocked, mixOrder, save, remove, load };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { root.PRIV = api; api.ready = load(); }
 })(typeof window !== "undefined" ? window : globalThis);
