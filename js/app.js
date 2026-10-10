@@ -38,7 +38,7 @@
   const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t, x: x.exk, k: x.k || [], core: !!x.core }]));
   const CHILL_TAGS = window.CHILL_TAGS || {};
   const CHILL_CATS = ["acct", "ev", "val", "dcf", "ma", "lbo", "model"].filter(c => CBANK.some(x => x.c === c));
-  const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"], analogy: ["🧩", "Analogy"] };
+  const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"], analogy: ["🧩", "Analogy"], scenario: ["🎬", "Scenario"] };
   const EXK = { numbers: "Quick numbers", analogy: "Think of it like this", scenario: "Picture this", visual: "At a glance" };
   let ch = CH.load(storage);
   const persistChill = () => CH.save(storage, ch);
@@ -122,6 +122,7 @@
   let chillSaved = false; // Chill feed limited to saved concepts
   let chillSession = [];  // concepts shown since the app opened, so a session doesn't repeat itself
   let chillQueue = [];    // concepts to show next before the picker: the card to resume on, or a Rabbit hole
+  let chillChipAt = -99;  // session position of the last card that offered a Rabbit hole on its face
   let drill = null;       // {ids, next}: "Test me" from a Chill card
   let dwell = null, curEl = null;
   let privShuffle = null; // this session's shuffled order for the private collection
@@ -174,10 +175,19 @@
     while (chillQueue.length && !q) { const x = chillQueue.shift(); if (chillById[x.id]) q = x; }
     const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now() });
     if (!id) { appendEnd(); return false; }
+    const prev = chillSession[chillSession.length - 1];
     const s = { kind: "chill", id, first: !chillSession.length && !chillSaved, rh: q && q.rh };
-    if (chillSession[chillSession.length - 1] !== id) chillSession.push(id);
+    // Builds on the card before it: a short connected run from the picker (Rabbit holes have their own badge).
+    if (!q && !chillSaved && prev !== id && CH.linked(CHILL_META[prev], CHILL_META[id])) s.link = true;
+    // Now and then (a must-know idea, at most every fifth card) the card itself offers a Rabbit hole.
+    if (!q && !chillSaved && !s.first && chillById[id].core && chillSession.length - chillChipAt >= 5) s.chip = true;
+    if (prev !== id) chillSession.push(id);
+    const chipBefore = chillChipAt;
     s.el = renderChill(s);
     feed.append(s.el); slides.push(s); observer.observe(s.el);
+    // Go deeper is a bonus: drop it if it would make the card scroll on this screen.
+    const chip = s.el.querySelector(".rh-chip"), sc = s.el.querySelector(".card-scroll");
+    if (chip && sc.scrollHeight > sc.clientHeight + 2) { chip.remove(); s.chip = false; chillChipAt = chipBefore; }
     return true;
   }
 
@@ -302,10 +312,14 @@
     const exBlock = `<div class="cex ${x.exk}"><div class="lbl">${EXK[x.exk] || "Example"}</div><div class="prose">${x.ex}</div></div>`;
     const verdict = x.t === "myth" ? `<span class="verdict-pill v-${x.v === "Myth" ? "no" : x.v === "True" ? "ok" : "mid"}">${esc(x.v)}</span>` : "";
     const body = `<div class="explain prose">${x.body}</div>`;
-    // Quick-example cards lead with the numbers; everything else explains first.
-    const main = x.t === "example" ? exBlock + body : body + exBlock;
+    // Vary the layout: numbers, diagrams and analogies lead on their cards; everything else explains first.
+    const main = x.t === "example" || x.t === "analogy" || x.exk === "visual" ? exBlock + body : body + exBlock;
+    const stat = x.stat ? `<div class="stat"><b>${esc(x.stat.n)}</b><span>${esc(x.stat.l)}</span></div>` : "";
+    const hook = x.t === "myth" ? `<h2 class="hook claim">“${esc(x.hook.replace(/[.!]$/, ""))}”</h2>` : `<h2 class="hook">${esc(x.hook)}</h2>`;
     const rel = (x.rel || []).filter(id => byId[id]);
     const rabbit = chillSaved ? [] : rabbitIds(x.id);
+    if (s.chip && rabbit.length < 3) s.chip = false;
+    if (s.chip) chillChipAt = chillSession.lastIndexOf(x.id);
     const more = `<div class="more-body" hidden>
         <div class="prose">${x.more.d}</div>
         ${x.more.f ? `<div class="prose"><div class="formula">${esc(x.more.f)}</div></div>` : ""}
@@ -315,15 +329,16 @@
           <button class="like-btn" aria-pressed="${!!ch.like[x.id]}"><span aria-hidden="true">👍</span> More like this</button>
         </div>
       </div>`;
-    el.innerHTML = `<article class="card chill-card t-${x.t}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
+    el.innerHTML = `<article class="card chill-card t-${x.t}${x.stat ? " has-stat" : ""}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<span class="badge rh">🕳️ ${s.rh.i} of ${s.rh.n}</span>` : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">
-          <h2 class="hook">${esc(x.hook)}</h2>
+          ${stat}${hook}
           ${main}
           <div class="take"><div class="lbl">Takeaway</div><p>${esc(x.take)}</p></div>
+          ${s.chip ? `<button class="rh-chip"><span aria-hidden="true">🕳️</span> Go deeper <small>${rabbit.length} related ideas</small></button>` : ""}
           ${s.first ? '<p class="swipe-hint" aria-hidden="true">Swipe up for the next one</p>' : ""}
           ${more}
         </div>
@@ -360,6 +375,27 @@
     ensureAhead();
     announce(`Rabbit hole: ${ids.length} related concepts next`);
     goTo(cur + 1);
+  }
+  // Leave a Rabbit hole: drop the related cards still lined up and carry on with the normal feed.
+  function leaveRabbit(s) {
+    chillQueue = chillQueue.filter(x => !x.rh);
+    slides.splice(cur + 1).forEach(x => { observer.unobserve(x.el); x.el.remove(); const k = chillSession.lastIndexOf(x.id); if (k > -1) chillSession.splice(k, 1); });
+    slides.filter(x => x.rh).forEach(x => { x.rh = null; const b = x.el.querySelector(".rh-exit"); if (b) b.remove(); });
+    ended = false;
+    ensureAhead();
+    announce("Back to your feed");
+    goTo(cur + 1);
+  }
+  // One-time hint, on the third Chill card: double tap means More like this.
+  function tipDoubleTap(s) {
+    if (ch.tips.dt || chillSaved || chillSession.indexOf(s.id) < 2) return;
+    ch.tips.dt = Date.now(); persistChill();
+    if (Object.keys(ch.like).length) return;   // already found it
+    const tip = document.createElement("div"); tip.className = "tip-dt"; tip.setAttribute("role", "status");
+    tip.innerHTML = '<span class="taps" aria-hidden="true">👆</span><span>Double-tap a card you like<br><small>to see more like it</small></span>';
+    s.el.querySelector(".card").append(tip);
+    const off = () => { tip.classList.add("out"); setTimeout(() => tip.remove(), 400); };
+    tip.addEventListener("click", off); setTimeout(off, 5000);
   }
   // More like this: from the button in Learn more, or a double tap on the card (which only ever turns it on).
   function likeChill(s, on) {
@@ -599,9 +635,10 @@
       if (t.closest(".bm")) return toggleChillBm(s);
       if (t.closest(".more-btn")) return toggleMore(s);
       if (t.closest(".try-btn")) return startDrill(s);
-      if (t.closest(".rh-btn")) return startRabbit(s);
+      if (t.closest(".rh-btn, .rh-chip")) return startRabbit(s);
+      if (t.closest(".rh-exit")) return leaveRabbit(s);
       if (t.closest(".like-btn")) return likeChill(s, !ch.like[s.id]);
-      if (!t.closest("button, a") && t.closest(".card")) {
+      if (!t.closest("button, a, .tip-dt") && t.closest(".card")) {
         const now = Date.now();
         if (s.tap && now - s.tap < 350) { s.tap = 0; likeChill(s, true); } else s.tap = now;
       }
@@ -644,6 +681,7 @@
     clearTimeout(dwell);
     // A concept counts as seen once it has been on screen for a couple of seconds (fast flicks don't count).
     if (s.kind === "chill") dwell = setTimeout(() => { if (slides[cur] === s) markChillSeen(s); }, 2000);
+    if (s.kind === "chill" && mode === "chill") tipDoubleTap(s);
     if (s.kind === "chill" && !chillSaved) { CH.setPos(ch, s.id, chillSession.slice(0, chillSession.lastIndexOf(s.id) + 1), Date.now()); persistChill(); }
     if (s.kind === "card" && mode === "interview" && !s.t0) s.t0 = Date.now();
     if (s.kind === "summary") renderSummary(s);
@@ -680,7 +718,7 @@
     if (mode !== "interview" && mode !== "drill") { st.prefs.mode = mode; persist(); }
     if (mode !== "chill") chillSaved = false;
     if (mode !== "drill") drill = null;
-    chillQueue = [];
+    chillQueue = []; chillChipAt = -99;
     if (mode === "chill" && !chillSaved) {
       // Pick up where you left off: same card, and no repeats of what you saw before closing the app.
       const r = CH.resume(ch, Date.now());
@@ -1253,5 +1291,5 @@
   applyTheme();
   updateHeader();
   rebuild();
-  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: id => renderChill({ id }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
+  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: (id, o) => renderChill({ id, ...o }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
 })();

@@ -519,6 +519,55 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.ok(a.slides.slice(1).every(s => !shown.includes(s.id)), "next cards are new to this session");
   });
 
+  await step("now and then a card offers Go deeper itself; the Rabbit hole badge leaves it at once", async () => {
+    let c = await chillCur();
+    for (let k = 0; k < 25 && !(await c.el.locator(".rh-chip").count()); k++) { await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); c = await chillCur(); }
+    assert.ok(await c.el.locator(".rh-chip").isVisible(), "a card offers Go deeper");
+    const a = await chillApp();
+    const chips = await pC.locator(".slide .rh-chip").count();
+    assert.ok(chips <= Math.ceil(a.slides.length / 5) + 1, `only now and then (${chips} of ${a.slides.length})`);
+    await shot(pC, "chill-chip");
+    await c.el.locator(".rh-chip").click();
+    await chillWait(c.idx + 1);
+    const r = await chillCur();
+    assert.match(await r.el.locator(".rh-exit").textContent(), /1 of \d/);
+    await r.el.locator(".rh-exit").click();
+    await chillWait(r.idx + 1);
+    const n = await chillCur();
+    assert.equal(await n.el.locator(".badge.rh").count(), 0, "back to the normal feed");
+    assert.equal(await pC.evaluate(() => window.__swipe.slides.filter(s => s.rh).length), 0, "no Rabbit hole cards left lined up");
+  });
+
+  await step("the double-tap hint shows once, on the third card, and never again", async () => {
+    await pC.evaluate(() => localStorage.removeItem("swipetechs.chill.v1"));
+    await pC.reload();
+    await pC.waitForFunction(() => window.__swipe && window.__swipe.mode === "chill" && window.__swipe.slides.length > 0);
+    let c = await chillCur();
+    assert.equal(await pC.locator(".tip-dt").count(), 0, "not on the first card");
+    for (let k = 0; k < 2; k++) { await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); c = await chillCur(); }
+    await c.el.locator(".tip-dt").waitFor({ state: "visible", timeout: 3000 });
+    await shot(pC, "chill-tip");
+    await c.el.locator(".tip-dt").click();
+    await c.el.locator(".tip-dt").waitFor({ state: "detached", timeout: 3000 });
+    await pC.evaluate(() => localStorage.setItem("swipetechs.chill.v1", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("swipetechs.chill.v1")), { pos: null }))));
+    await pC.reload();
+    await pC.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+    c = await chillCur();
+    for (let k = 0; k < 3; k++) { await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); c = await chillCur(); }
+    await pC.waitForTimeout(300);
+    assert.equal(await pC.locator(".tip-dt").count(), 0, "shown only once");
+  });
+
+  await step("myth cards state the claim; headline numbers show big", async () => {
+    const r = await pC.evaluate(() => {
+      const m = window.CB.find(x => x.t === "myth"), st = window.CB.find(x => x.stat);
+      const em = window.__swipe.renderChill(m.id), es = st ? window.__swipe.renderChill(st.id) : null;
+      return { claim: em.querySelector(".hook.claim").textContent, stat: es ? es.querySelector(".stat b").textContent : null, n: st ? st.stat.n : null };
+    });
+    assert.match(r.claim, /^“.+”$/);
+    if (r.n) assert.equal(r.stat, r.n);
+  });
+
   await step("most Chill cards fit on one phone screen without scrolling inside the card", async () => {
     const r = await pC.evaluate(() => {
       const feed = document.querySelector(".feed"); let fit = 0;

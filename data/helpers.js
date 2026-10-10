@@ -73,10 +73,11 @@ window.TB = function (rows) {
 /* Chill Mode concept cards: a passive feed, separate from the question bank and its progress.
    Each data/chill/<topic>.js calls CHILL(category, [cards]). Card fields:
      id     stable id: "x" + topic letter + number, e.g. "xa1" (never change or reuse: seen/saved state is keyed on it)
-     t      "concept" | "intuition" | "example" | "fact" | "real" | "myth" | "analogy"
-     hook   the curiosity question or story opener (plain text)
+     t      "concept" | "intuition" | "example" | "fact" | "real" | "myth" | "analogy" | "scenario" (you're in the room: what happens?)
+     hook   the opener (plain text): a question, a bold statement, a number or a story start. Myth cards state the claim itself.
      v      myth cards only: "Myth" | "Partly true" | "True"
-     body   1–3 short sentences (HTML; <b> highlights a key term)
+     stat   optional headline number shown big above the hook: {n: "75%", l: "short label, up to 8 words"} (plain text)
+     body   1–2 short sentences (HTML; <b> highlights a key term)
      exk    "numbers" | "analogy" | "scenario" | "visual"
      ex     the example (HTML: <p>, TB() table, <div class="calc"> lines, or a diagram: WF, BARS, SPLIT, FLOW, VS)
      take   one-sentence takeaway (plain text)

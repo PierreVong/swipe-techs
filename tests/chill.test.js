@@ -1,4 +1,4 @@
-// Chill Mode content checks: structure, length limits (10–20 second reads), links into the main bank. Run: node --test tests/*.test.js
+// Chill Mode content checks: structure, length limits (10–15 second reads), links into the main bank. Run: node --test tests/*.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
@@ -35,22 +35,26 @@ test("ids are unique, stable-looking and match their topic", () => {
 
 const isVisual = x => x.exk === "visual";
 
+// What shows before Learn more: a 10–15 second read.
+const front = x => words(x.hook) + (x.stat ? words(x.stat.n) + words(x.stat.l) : 0) + words(x.body) + (isVisual(x) ? 0 : words(x.ex)) + words(x.take);
+
 test("every card has a hook, a short explanation, an example and one takeaway", () => {
   for (const x of CB) {
     const at = x.id;
-    assert.ok(["concept", "intuition", "example", "fact", "real", "myth", "analogy"].includes(x.t), at + " t");
-    assert.ok(x.hook && x.hook.length >= 15 && x.hook.length <= 90, at + " hook length " + (x.hook || "").length);
+    assert.ok(["concept", "intuition", "example", "fact", "real", "myth", "analogy", "scenario"].includes(x.t), at + " t");
+    assert.ok(x.hook && x.hook.length >= 15 && x.hook.length <= 80, at + " hook length " + (x.hook || "").length);
     assert.ok(!/</.test(x.hook), at + " hook is plain text");
-    if (x.t === "myth") assert.ok(["Myth", "Partly true", "True"].includes(x.v), at + " myth verdict");
+    if (x.t === "myth") { assert.ok(["Myth", "Partly true", "True"].includes(x.v), at + " myth verdict"); assert.ok(!/\?$/.test(x.hook.trim()), at + " myth hook states the claim"); }
+    if (x.stat) assert.ok(x.stat.n && x.stat.n.length <= 8 && x.stat.l && words(x.stat.l) <= 8 && !/</.test(x.stat.n + x.stat.l), at + " stat");
     const s = sentences(x.body);
-    assert.ok(s >= 1 && s <= 3, `${at} body has ${s} sentences`);
-    assert.ok(words(x.body) <= 40, `${at} body ${words(x.body)} words`);
+    assert.ok(s >= 1 && s <= 2, `${at} body has ${s} sentences`);
+    assert.ok(words(x.body) <= 28, `${at} body ${words(x.body)} words`);
     assert.ok(["numbers", "analogy", "scenario", "visual"].includes(x.exk), at + " exk");
-    assert.ok(x.ex && words(x.ex) <= (isVisual(x) ? 40 : 30), `${at} example ${words(x.ex || "")} words`);
+    assert.ok(x.ex && words(x.ex) <= (isVisual(x) ? 40 : 24), `${at} example ${words(x.ex || "")} words`);
     if (isVisual(x)) assert.match(x.ex, /class="viz /, at + " visual example uses a diagram helper");
-    assert.ok(x.take && !/</.test(x.take) && words(x.take) <= 14 && sentences(x.take) === 1, `${at} takeaway`);
-    assert.ok(words(x.hook) + words(x.body) + (isVisual(x) ? 0 : words(x.ex)) + words(x.take) <= 75, `${at} too long for a 10–20 second read`);
-    assert.ok(x.more && x.more.d && words(x.more.d) >= 15 && words(x.more.d) <= 110, at + " learn more");
+    assert.ok(x.take && !/</.test(x.take) && words(x.take) <= 12 && sentences(x.take) === 1, `${at} takeaway`);
+    assert.ok(front(x) <= 52, `${at} front is ${front(x)} words, too long for a 10–15 second read`);
+    assert.ok(x.more && x.more.d && words(x.more.d) >= 15 && words(x.more.d) <= 130, at + " learn more");
     if (x.more.f) assert.ok(!/</.test(x.more.f), at + " formula is plain text");
     assert.ok(Array.isArray(x.rel) && x.rel.length >= 1 && x.rel.length <= 3, at + " rel");
     x.rel.forEach(id => assert.ok(bankIds.has(id), `${at} rel ${id} not in the question bank`));
@@ -60,11 +64,23 @@ test("every card has a hook, a short explanation, an example and one takeaway", 
   }
 });
 
+test("writing styles vary: not every hook is a question, and openers don't repeat", () => {
+  for (const c of present) {
+    const cards = CB.filter(x => x.c === c);
+    const q = cards.filter(x => /\?$/.test(x.hook.trim())).length;
+    assert.ok(q <= cards.length * 0.5, `${c}: ${q} of ${cards.length} hooks are questions`);
+    const why = cards.filter(x => /^why\b/i.test(x.hook)).length;
+    assert.ok(why <= 4, `${c}: ${why} hooks start with "Why"`);
+    const seen = {};
+    cards.forEach(x => { const k = x.hook.toLowerCase().split(/\s+/).slice(0, 3).join(" "); assert.ok(!seen[k], `${x.id} and ${seen[k]} open the same way`); seen[k] = x.id; });
+  }
+});
+
 test("each topic has plenty of cards, a mix of card types and some diagrams", () => {
   for (const c of present) {
     const cards = CB.filter(x => x.c === c);
     assert.ok(cards.length >= 22, `${c}: ${cards.length} cards`);
-    assert.ok(new Set(cards.map(x => x.t)).size >= 5, `${c}: card types`);
+    assert.ok(new Set(cards.map(x => x.t)).size >= 6, `${c}: card types`);
     assert.ok(cards.filter(isVisual).length >= 4, `${c}: diagrams`);
     assert.ok(cards.some(x => x.core), `${c}: core ideas`);
   }
