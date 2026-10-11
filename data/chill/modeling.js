@@ -46,11 +46,11 @@ exk:"numbers",ex:`<div class="calc">A 120 contract: 120 upfront, or 10 a month</
 more:{d:`<p>Under ASC 606, revenue follows delivery of the service, not the invoice. Deferred revenue is an obligation to deliver, and it falls as revenue is earned. After a switch to monthly billing, the year-end deferred revenue balance is far smaller, and that decrease is a negative line in cash from operations. That's why investors in subscription businesses watch billings and free cash flow alongside revenue.</p>`},
 rel:["f14","a16"]},
 
-{id:"xf8",t:"example",core:true,p:"growth-needs-cash",iv:"three-statements",k:["depreciation","modeling"],hook:"Spend less on capex than depreciation and a business quietly shrinks.",
-body:`<p>Think of PP&amp;E as a bathtub: <b>capex</b> pours in, depreciation drains out. Drain faster than you pour and the asset base gets smaller every year.</p>`,
+{id:"xf8",t:"example",core:true,p:"growth-needs-cash",iv:"three-statements",k:["depreciation","modeling"],hook:"When capex runs below depreciation for years, a business is usually shrinking.",
+body:`<p>Picture equipment as a bathtub: <b>capex</b> pours in, depreciation drains out. If depreciation tracks real wear, draining faster leaves less equipment each year.</p>`,
 exk:"visual",ex:WF([["Start PP&amp;E",500,"base","$500"],["+ Capex",60,"add","+$60"],["− Depreciation",80,"sub","−$80"],["End PP&amp;E",480,"total","$480"]]),
-take:"A shrinking asset base rarely supports a growing business.",
-more:{d:`<p>Flip the numbers, 80 of capex against 60 of depreciation, and PP&amp;E grows to 520. The full roll-forward also subtracts asset sales and impairments. Capex is often projected as a percentage of revenue, and depreciation as a percentage of beginning PP&amp;E or of capex. Capex consistently below depreciation can be fine for a business becoming more asset-light; otherwise it suggests the projections underinvest.</p>`,f:"Ending PP&E = Beginning PP&E + Capex − Depreciation"},
+take:"In a DCF forecast, years of capex below depreciation overstate cash.",
+more:{d:`<p>Flip the numbers, 80 of capex against 60 of depreciation, and PP&amp;E grows to 520. The full roll-forward also subtracts asset sales and impairments. Capex is often projected as a percentage of revenue, and depreciation as a percentage of beginning PP&amp;E or of capex. Capex consistently below depreciation can be fine for a business becoming more asset-light, or where book depreciation runs ahead of real wear; otherwise it suggests the projections underinvest.</p>`,f:"Ending PP&E = Beginning PP&E + Capex − Depreciation"},
 rel:["f4","a31"]},
 
 {id:"xf9",t:"intuition",core:true,p:"leverage-magnifies",k:["modeling","scenarios"],hook:"Sales grow 10%. Operating profit grows 25%.",stat:{n:"2.5x",l:"operating leverage in this example"},

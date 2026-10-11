@@ -57,9 +57,9 @@ more:{d:`<p>Compare LTM with LTM and forward with forward. Valuation is about th
 rel:["v27","v36"]},
 
 {id:"xv9",t:"intuition",core:true,p:"profit-not-cash",k:["multiples","fcf"],hook:"Two companies earn the same $100 of EBITDA. Buyers value them very differently.",
-body:`<p>EBITDA ignores <b>capex</b>. A steel mill keeps rebuilding its furnaces; a software firm mostly buys laptops.</p>`,
-exk:"visual",ex:BARS([["Software",90,"$100 − $10 capex = $90",1],["Steel mill",40,"$100 − $60 capex = $40"]]),
-take:"Buyers pay for the cash a business gets to keep.",
+body:`<p>EBITDA is measured before <b>capex</b>. A steel mill spends $60 a year rebuilding furnaces; a software firm spends $10 on laptops and servers.</p>`,
+exk:"visual",ex:BARS([["Software keeps",90,"$90",1],["Steel mill keeps",40,"$40"]]),
+take:"Buyers pay more for the cash a business gets to keep.",
 more:{d:`<p>EBITDA ignores capex, working capital needs and taxes, so it overstates cash generation for capital-heavy businesses. That's one reason asset-light companies usually trade at higher EV/EBITDA multiples. For capital-intensive peers, bankers often compare EV/EBIT or EV/(EBITDA − capex) instead.</p>`},
 rel:["v16","v41"]},
 
