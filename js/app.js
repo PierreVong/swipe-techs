@@ -35,8 +35,9 @@
   const CH = window.CHILLS;
   const CBANK = window.CB || [];
   const chillById = Object.fromEntries(CBANK.map(x => [x.id, x]));
-  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t, x: x.exk, k: x.k || [], core: !!x.core }]));
+  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t, x: x.exk, k: x.k || [], p: x.p, core: !!x.core }]));
   const CHILL_TAGS = window.CHILL_TAGS || {};
+  const CHILL_IDEAS = window.CHILL_IDEAS || {}, CHILL_IV = window.CHILL_IV || {};
   const CHILL_CATS = ["acct", "ev", "val", "dcf", "ma", "lbo", "model"].filter(c => CBANK.some(x => x.c === c));
   const CTYPES = { concept: ["💡", "Concept"], intuition: ["🧠", "Intuition"], example: ["🧮", "Quick example"], fact: ["😮", "Surprising"], real: ["🌍", "Real world"], myth: ["🤔", "Myth check"], analogy: ["🧩", "Analogy"], scenario: ["🎬", "Scenario"] };
   const EXK = { numbers: "Quick numbers", analogy: "Think of it like this", scenario: "Picture this", visual: "At a glance" };
@@ -174,12 +175,14 @@
     // Saved concepts play through once; the main feed keeps going.
     let q = null;
     while (chillQueue.length && !q) { const x = chillQueue.shift(); if (chillById[x.id]) q = x; }
-    const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now() });
+    const why = {};
+    const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now(), out: why });
     if (!id) { appendEnd(); return false; }
     const prev = chillSession[chillSession.length - 1];
     const s = { kind: "chill", id, first: !chillSession.length && !chillSaved, rh: q && q.rh };
-    // Builds on the card before it: a short connected run from the picker (Rabbit holes have their own badge).
-    if (!q && !chillSaved && prev !== id && CH.linked(CHILL_META[prev], CHILL_META[id])) s.link = true;
+    // Builds on the card before it (a short connected run), or brings back a big idea from a while ago in a new context.
+    if (!q && !chillSaved && why.why === "run") s.link = true;
+    if (!q && !chillSaved && why.why === "echo") s.echo = true;
     // Now and then (a must-know idea, at most every fifth card) the card itself offers a Rabbit hole.
     if (!q && !chillSaved && !s.first && chillById[id].core && chillSession.length - chillChipAt >= 5) s.chip = true;
     if (prev !== id) chillSession.push(id);
@@ -310,11 +313,12 @@
     const saved = ch.bm.includes(x.id);
     const seenBefore = ch.seen[x.id];
     const ty = CTYPES[x.t] || CTYPES.concept;
-    const exBlock = `<div class="cex ${x.exk}"><div class="lbl">${EXK[x.exk] || "Example"}</div><div class="prose">${x.ex}</div></div>`;
+    const exBlock = x.ex ? `<div class="cex ${x.exk}"><div class="lbl">${EXK[x.exk] || "Example"}</div><div class="prose">${x.ex}</div></div>` : "";
     const verdict = x.t === "myth" ? `<span class="verdict-pill v-${x.v === "Myth" ? "no" : x.v === "True" ? "ok" : "mid"}">${esc(x.v)}</span>` : "";
     const body = `<div class="explain prose">${x.body}</div>`;
     // Vary the layout: numbers, diagrams and analogies lead on their cards; everything else explains first.
     const main = x.t === "example" || x.t === "analogy" || x.exk === "visual" ? exBlock + body : body + exBlock;
+    const idea = s.echo && CHILL_IDEAS[x.p] ? `<p class="idea"><span aria-hidden="true">🔁</span> Big idea, new angle: ${esc(CHILL_IDEAS[x.p])}</p>` : "";
     const stat = x.stat ? `<div class="stat"><b>${esc(x.stat.n)}</b><span>${esc(x.stat.l)}</span></div>` : "";
     const hook = x.t === "myth" ? `<h2 class="hook claim">“${esc(x.hook.replace(/[.!]$/, ""))}”</h2>` : `<h2 class="hook">${esc(x.hook)}</h2>`;
     const rel = (x.rel || []).filter(id => byId[id]);
@@ -332,13 +336,14 @@
       </div>`;
     el.innerHTML = `<article class="card chill-card t-${x.t}${x.stat ? " has-stat" : ""}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${x.hyp ? '<span class="badge hyp">Hypothetical</span>' : ""}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">
-          ${stat}${hook}
+          ${idea}${stat}${hook}
           ${main}
-          <div class="take"><div class="lbl">Takeaway</div><p>${esc(x.take)}</p></div>
+          ${x.take ? `<div class="take"><div class="lbl">Takeaway</div><p>${esc(x.take)}</p></div>` : ""}
+          ${x.iv && CHILL_IV[x.iv] ? `<p class="ivc">Interview connection: ${esc(CHILL_IV[x.iv])}</p>` : ""}
           ${s.chip ? `<button class="rh-chip"><span aria-hidden="true">🕳️</span> Go deeper <small>${rabbit.length} related ideas</small></button>` : ""}
           ${s.first ? '<p class="swipe-hint" aria-hidden="true">Swipe up for the next one</p>' : ""}
           ${more}

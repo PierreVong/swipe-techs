@@ -7,8 +7,10 @@
   const RESUME = 12 * 3600000;  // reopening Chill within this long continues where you left off
   const RESURFACE = 0.2;        // share of picks that bring back a concept seen on an earlier day, once unseen ones remain
   const RECENT = 60;            // ids kept to avoid repeats when a session is resumed
-  const LINK = 0.25;            // chance the next card builds on the one before (a run of 2) ...
+  const LINK = 0.3;             // chance the next card builds on the one before (a run of 2) ...
   const LINK2 = 0.45;           // ... and that a run of 2 grows to 3, never longer
+  const ECHO = 0.15;            // chance of a big idea you've met before, told through a new example
+  const ECHO_GAP = 8;           // ... but not if that idea was on screen within the last few cards
 
   // seen: id -> {n, t}; bm: saved ids; cats: topic filter; like: id -> time ("More like this");
   // int: id -> small interest score (Learn more, Test me); pos: {id, t} last card on screen; recent: this session's ids;
@@ -64,8 +66,8 @@
   }
   const affinity = (m, t) => m ? Math.min(3, 0.5 * (m.k || []).reduce((a, k) => a + (t.tag[k] || 0), 0) + 0.2 * (t.cat[m.c] || 0)) : 0;
 
-  // Two concepts are connected when they share a concept tag.
-  const linked = (a, b) => !!(a && b && (a.k || []).some(k => (b.k || []).includes(k)));
+  // Two concepts are connected when they share a concept tag or teach the same big idea.
+  const linked = (a, b) => !!(a && b && ((a.p && a.p === b.p) || (a.k || []).some(k => (b.k || []).includes(k))));
   // How many cards at the end of the session form one connected run (1 = the last card stands alone).
   function runLength(session, meta) {
     let n = session.length ? 1 : 0;
@@ -74,14 +76,17 @@
   }
 
   /* Next concept for the feed.
-     ids: the concepts in the current selection; meta: id -> {c, t, x, k, core}; session: ids already shown, in order.
+     ids: the concepts in the current selection; meta: id -> {c, t, x, k, p, core}; session: ids already shown, in order.
+     opts.out, if given, receives why the card was picked: "run" | "echo" | "fresh" | "revisit" | "again".
      Order of preference: unseen (varied, tilted toward what you've liked; now and then a short run of 2–3 connected
-     concepts, so ideas build on each other) -> seen on an earlier day (saved, liked and
+     concepts, so ideas build on each other, or a big idea you met a while ago told through a new example) -> seen on an earlier day (saved, liked and
      core ideas first, sometimes mixed in early for reinforcement) -> anything not in the last few cards. Never repeats
      within a session until the whole selection has been shown. */
   function pick(c, ids, opts) {
     const o = opts || {};
     const now = o.now || Date.now(), rnd = o.rnd || Math.random, session = o.session || [], meta = o.meta || {};
+    const out = o.out || {};
+    out.why = null;
     if (!ids.length) return null;
     const shown = new Set(session);
     const recent = session.slice(-3).map(id => meta[id]).filter(Boolean);
@@ -90,18 +95,26 @@
     const stale = old.filter(id => now - c.seen[id].t >= DAY);
     if (fresh.length && !(stale.length && rnd() < RESURFACE)) {
       const run = runLength(session, meta), last = session[session.length - 1];
-      if (run >= 1 && run < 3 && rnd() < (run === 1 ? LINK : LINK2)) {
-        const next = related(c, last, fresh, meta, 2);
-        if (next.length) return next[Math.floor(rnd() * next.length)];
-      }
       const t = taste(c, meta);
+      if (run >= 1 && run < 3 && rnd() < (run === 1 ? LINK : LINK2)) {
+        // Like a related video: one of the closest unseen concepts, nudged toward what you've enjoyed.
+        const next = related(c, last, fresh, meta, 3);
+        if (next.length) { out.why = "run"; return weighted(next, id => 1 + affinity(meta[id], t), rnd); }
+      }
+      if (rnd() < ECHO) {
+        const id = echo(c, fresh, session, meta, recent, rnd);
+        if (id) { out.why = "echo"; return id; }
+      }
+      out.why = "fresh";
       return weighted(varied(fresh, recent, meta), id => 1 + affinity(meta[id], t), rnd);
     }
     if (stale.length) {
       const score = id => (c.bm.includes(id) ? 3 : 0) + (c.like[id] ? 3 : 0) + (meta[id] && meta[id].core ? 2 : 0) + Math.min(2, (now - c.seen[id].t) / (7 * DAY));
       const top = varied(stale, recent, meta).sort((a, b) => score(b) - score(a));
+      out.why = "revisit";
       return top[Math.floor(rnd() * Math.min(3, top.length))];
     }
+    out.why = "again";
     if (old.length) return varied(old.sort((a, b) => c.seen[a].t - c.seen[b].t), recent, meta)[0];
     // Everything in this selection was shown this session: start over, avoiding the most recent cards.
     const last = new Set(session.slice(-Math.min(8, ids.length - 1)));
@@ -114,11 +127,11 @@
   function varied(pool, recent, meta) {
     if (!recent.length) return pool;
     const prev = recent[recent.length - 1], two = recent.slice(-2);
-    const tags = new Set(recent.flatMap(m => m.k || []));
+    const tags = new Set(recent.flatMap(m => m.k || [])), ideas = new Set(recent.map(m => m.p).filter(Boolean));
     const rules = [
       m => !two.some(r => r.c === m.c),
       m => m.t !== prev.t,
-      m => !(m.k || []).some(k => tags.has(k)),
+      m => !(m.k || []).some(k => tags.has(k)) && !(m.p && ideas.has(m.p)),
       m => m.x !== prev.x,
     ];
     for (let n = rules.length; n > 0; n--) {
@@ -134,12 +147,30 @@
     return pool[pool.length - 1];
   }
 
-  /* Rabbit hole: concepts that share the most tags with this one, unseen ones first, then the core ideas. */
+  /* Passive repetition: a big idea you've already met (earlier today or on another day, but not in the last few
+     cards) comes back through a card you haven't seen, so the same principle shows up in a new context.
+     Ideas behind saved, liked and core concepts come back more. */
+  function echo(c, fresh, session, meta, recent, rnd) {
+    const lastAt = {};
+    session.forEach((id, i) => { const p = meta[id] && meta[id].p; if (p) lastAt[p] = i; });
+    const weight = {};
+    Object.keys(c.seen).concat(session).forEach(id => {
+      const m = meta[id]; if (!m || !m.p) return;
+      if (lastAt[m.p] != null && session.length - lastAt[m.p] < ECHO_GAP) return;
+      weight[m.p] = Math.max(weight[m.p] || 1, 1 + (c.bm.includes(id) || c.like[id] ? 2 : 0) + (m.core ? 1 : 0));
+    });
+    const pool = fresh.filter(id => meta[id] && weight[meta[id].p]);
+    if (!pool.length) return null;
+    return weighted(varied(pool, recent, meta), id => weight[meta[id].p], rnd);
+  }
+
+  /* Rabbit hole: concepts that share the most tags with this one (or teach the same big idea), unseen ones first, then the core ideas. */
   function related(c, id, ids, meta, n) {
     const m = meta[id]; if (!m) return [];
     const mine = new Set(m.k || []);
-    return ids.filter(x => x !== id && meta[x] && (meta[x].k || []).some(k => mine.has(k)))
-      .map(x => ({ x, s: (meta[x].k || []).filter(k => mine.has(k)).length * 2 + (c.seen[x] ? 0 : 1.5) + (meta[x].core ? 0.5 : 0) + (meta[x].c === m.c ? 0 : 0.25) }))
+    const same = x => !!(m.p && meta[x].p === m.p);
+    return ids.filter(x => x !== id && meta[x] && ((meta[x].k || []).some(k => mine.has(k)) || same(x)))
+      .map(x => ({ x, s: (meta[x].k || []).filter(k => mine.has(k)).length * 2 + (same(x) ? 1.5 : 0) + (c.seen[x] ? 0 : 1.5) + (meta[x].core ? 0.5 : 0) + (meta[x].c === m.c ? 0 : 0.25) }))
       .sort((a, b) => b.s - a.s || (a.x < b.x ? -1 : 1))
       .slice(0, n || 4).map(r => r.x);
   }
@@ -149,6 +180,6 @@
     return { total: cards.length, seen: Object.keys(c.seen).filter(id => ids.has(id)).length, saved: c.bm.filter(id => ids.has(id)).length };
   }
 
-  const api = { KEY, RESUME, blank, linked, runLength, load, save, markSeen, toggleBm, toggleLike, interest, setPos, resume, taste, pick, related, stats };
+  const api = { KEY, RESUME, blank, linked, runLength, echo, load, save, markSeen, toggleBm, toggleLike, interest, setPos, resume, taste, pick, related, stats };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.CHILLS = api;
 })(typeof window !== "undefined" ? window : globalThis);

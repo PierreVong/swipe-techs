@@ -143,3 +143,35 @@ test("now and then the next card builds on the last one, in runs of at most thre
   const r = C.pick(c, tids, { now: T0, session: ["w1"], rnd: () => 0.21, meta: tagged });   // above the resurfacing share, below the run chance
   assert.ok(!["w2", "w3"].includes(r), `seen concepts don't extend a run (${r})`);
 });
+
+test("a big idea met a while ago comes back through a new, unseen card; never right after it was shown", () => {
+  const meta = {
+    i1: { c: "acct", t: "concept", x: "numbers", k: ["working-capital"], p: "profit-not-cash", core: true },
+    i2: { c: "lbo", t: "real", x: "visual", k: ["debt-paydown"], p: "profit-not-cash" },
+    i3: { c: "ma", t: "fact", x: "analogy", k: ["synergies"], p: "control-costs" },
+  };
+  for (let i = 0; i < 10; i++) meta["f" + i] = { c: "val", t: "myth", x: "scenario", k: ["multiples"], p: "multiples-shortcut" };
+  const ids = Object.keys(meta);
+  const c = C.blank();
+  C.markSeen(c, "i1", T0 - 2 * DAY);
+  const out = {};
+  let k = 0; const seq = [0.9, 0.9, 0.1, 0.5, 0.5]; const rnd = () => seq[k++ % seq.length];   // no revisit, no connected run, then the echo
+  assert.equal(C.pick(c, ids, { now: T0, session: ["f0"], rnd, meta, out }), "i2");
+  assert.equal(out.why, "echo");
+  // Shown three cards ago: too soon for the same idea.
+  const session = ["i1", "f1", "f2"];
+  assert.equal(C.echo(c, ["i2", "i3"], session, meta, session.map(id => meta[id]), () => 0.5), null);
+  const later = ["i1", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"];
+  assert.equal(C.echo(c, ["i2", "i3"], later, meta, later.slice(-3).map(id => meta[id]), () => 0.5), "i2");
+});
+
+test("cards teaching the same big idea count as connected, for runs and the Rabbit hole", () => {
+  const a = { c: "acct", k: ["inventory"], p: "profit-not-cash" }, b = { c: "lbo", k: ["leverage"], p: "profit-not-cash" };
+  assert.ok(C.linked(a, b));
+  assert.ok(!C.linked(a, { c: "lbo", k: ["leverage"], p: "time-value" }));
+  const c = C.blank(), out = {};
+  const meta = { a, b, z: { c: "dcf", t: "fact", k: ["wacc"], p: "risk-price" } };
+  assert.deepEqual(C.related(c, "a", ["b", "z"], meta), ["b"]);
+  assert.equal(C.pick(c, ["b", "z"], { now: T0, session: ["a"], rnd: () => 0.1, meta, out }), "b");
+  assert.equal(out.why, "run");
+});
