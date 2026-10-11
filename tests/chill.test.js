@@ -48,7 +48,7 @@ test("every card has a hook and a short explanation; example and takeaway are op
     if (x.stat) assert.ok(x.stat.n && x.stat.n.length <= 8 && x.stat.l && words(x.stat.l) <= 8 && !/</.test(x.stat.n + x.stat.l), at + " stat");
     const s = sentences(x.body);
     assert.ok(s >= 1 && s <= 3, `${at} body has ${s} sentences`);
-    assert.ok(words(x.body) <= 45, `${at} body ${words(x.body)} words`);
+    assert.ok(words(x.body) <= 35, `${at} body ${words(x.body)} words`);
     assert.equal(!!x.ex, !!x.exk, at + " ex and exk go together");
     if (x.ex) {
       assert.ok(["numbers", "analogy", "scenario", "visual"].includes(x.exk), at + " exk");
@@ -57,7 +57,7 @@ test("every card has a hook and a short explanation; example and takeaway are op
     }
     if (x.take) assert.ok(!/</.test(x.take) && words(x.take) <= 14 && sentences(x.take) === 1, `${at} takeaway`);
     assert.ok(x.ex || x.take || words(x.body) >= 20, at + " says enough on the front");
-    assert.ok(front(x) <= 62, `${at} front is ${front(x)} words, too long for a relaxed read`);
+    assert.ok(front(x) <= 50, `${at} front is ${front(x)} words, too long for a 10–15 second read`);
     assert.ok(x.more && x.more.d && words(x.more.d) >= 15 && words(x.more.d) <= 130, at + " learn more");
     if (x.more.f) assert.ok(!/</.test(x.more.f), at + " formula is plain text");
     assert.ok(Array.isArray(x.rel) && x.rel.length >= 1 && x.rel.length <= 3, at + " rel");
@@ -138,5 +138,27 @@ test("bridges are short, real and cross topics", () => {
     assert.ok(path.length >= 2 && path.length <= 3, path.join(" → "));
     path.forEach(id => assert.ok(ids.has(id), `${id} in a bridge doesn't exist`));
     assert.ok(new Set(path.map(id => cat[id])).size >= 2, `${path.join(" → ")} stays in one topic`);
+  }
+});
+
+test("the voice stays calm: no clickbait words, exclamation marks or emoji in the text", () => {
+  const loud = /!|\b(nope|magic|kicker|secret|shocking|insane|crazy|mind-blowing|taxman|balks|confess\w*|sneak\w*|dream business|you won't believe)\b/i;
+  const emoji = /\p{Extended_Pictographic}/u;
+  for (const x of CB) for (const f of ["hook", "body", "take"]) {
+    const t = (x[f] || "").replace(/<[^>]+>/g, " ");
+    assert.ok(!loud.test(t), `${x.id} ${f}: "${(t.match(loud) || [])[0]}"`);
+    assert.ok(!emoji.test(t), `${x.id} ${f} has an emoji`);
+  }
+});
+
+test("core IB terms keep coming up on the front of cards, so they become familiar", () => {
+  const TERMS = { "enterprise value": /enterprise value|\bEV\b/i, "equity value": /equity value/i, "EBITDA": /EBITDA/, "working capital": /working capital/i,
+    "free cash flow": /free cash flow|UFCF/i, "UFCF": /UFCF|unlevered free cash flow/i, "WACC": /WACC/, "terminal value": /terminal value/i,
+    "IRR": /\bIRR\b/, "MOIC": /MOIC/, "accretion/dilution": /accreti|diluti/i, "synergies": /synerg/i, "goodwill": /goodwill/i,
+    "deferred tax": /deferred tax/i, "capex": /capex/i, "diluted shares": /diluted share/i, "leverage": /leverage/i, "multiple": /multiple/i };
+  const fronts = CB.map(x => [x.hook, x.stat ? x.stat.l : "", x.body, x.ex || "", x.take || ""].join(" ").replace(/<[^>]+>/g, " "));
+  for (const [name, re] of Object.entries(TERMS)) {
+    const n = fronts.filter(t => re.test(t)).length;
+    assert.ok(n >= 4, `${name} appears on the front of only ${n} cards`);
   }
 });
