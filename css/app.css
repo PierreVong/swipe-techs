@@ -583,3 +583,8 @@ button.badge.rh-exit { border: 0; font: inherit; font-family: var(--body); font-
 .badge.hyp { color: var(--muted); background: transparent; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); padding: 0 7px; }
 .ivc { margin: 0; font-size: 12.5px; color: var(--muted); }
 .ivc::before { content: "🎯 "; }
+@media (max-height: 700px) {
+  .chill-card .cex .lbl, .chill-card .take .lbl { display: none; }   /* small phones: drop the section labels before anything scrolls */
+  .chill-body { gap: 8px; }
+  .ivc, .idea { font-size: 12px; }
+}
