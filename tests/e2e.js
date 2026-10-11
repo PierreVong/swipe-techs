@@ -343,7 +343,10 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await pC.waitForFunction(() => window.__swipe.mode === "chill");
     const s = await chillCur();
     assert.equal(s.kind, "chill");
-    for (const sel of [".hook", ".explain", ".cex", ".take"]) assert.ok(await s.el.locator(sel).isVisible(), sel + " visible");
+    for (const sel of [".hook", ".explain"]) assert.ok(await s.el.locator(sel).isVisible(), sel + " visible");
+    const card = await pC.evaluate(id => { const x = window.CB.find(y => y.id === id); return { ex: !!x.ex, take: !!x.take }; }, s.id);
+    assert.equal(await s.el.locator(".cex").count(), card.ex ? 1 : 0, "example when the card has one");
+    assert.equal(await s.el.locator(".take").count(), card.take ? 1 : 0, "takeaway when the card has one");
     assert.equal(await s.el.locator(".reveal-btn, .opt, .rates, .timer").count(), 0);
     assert.equal(await s.el.locator(".more-body").isHidden(), true, "Learn more starts closed");
     assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark", "Chill uses the night palette");
@@ -556,6 +559,19 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     for (let k = 0; k < 3; k++) { await pC.keyboard.press("ArrowDown"); await chillWait(c.idx + 1); c = await chillCur(); }
     await pC.waitForTimeout(300);
     assert.equal(await pC.locator(".tip-dt").count(), 0, "shown only once");
+  });
+
+  await step("interview connections, hypothetical labels and big-idea echoes render quietly", async () => {
+    const r = await pC.evaluate(() => {
+      const iv = window.CB.find(x => x.iv), hyp = window.CB.find(x => x.hyp), real = window.CB.find(x => x.t === "real");
+      const a = window.__swipe.renderChill(iv.id), b = window.__swipe.renderChill(hyp.id), c = window.__swipe.renderChill(real.id), d = window.__swipe.renderChill(iv.id, { echo: true });
+      return { iv: a.querySelector(".ivc").textContent, ivLabel: window.CHILL_IV[iv.iv], ivTap: a.querySelector(".ivc").closest("button, a"), hyp: b.querySelector(".badge.hyp").textContent, realHyp: c.querySelectorAll(".badge.hyp").length, idea: d.querySelector(".idea").textContent, ideaLabel: window.CHILL_IDEAS[iv.p], plain: a.querySelectorAll(".idea").length };
+    });
+    assert.equal(r.iv, "Interview connection: " + r.ivLabel);
+    assert.equal(r.ivTap, null, "informational only");
+    assert.equal(r.hyp, "Hypothetical"); assert.equal(r.realHyp, 0);
+    assert.match(r.idea, new RegExp(r.ideaLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.equal(r.plain, 0, "the big idea only shows when it comes back");
   });
 
   await step("myth cards state the claim; headline numbers show big", async () => {

@@ -77,14 +77,33 @@ window.TB = function (rows) {
      hook   the opener (plain text): a question, a bold statement, a number or a story start. Myth cards state the claim itself.
      v      myth cards only: "Myth" | "Partly true" | "True"
      stat   optional headline number shown big above the hook: {n: "75%", l: "short label, up to 8 words"} (plain text)
-     body   1–2 short sentences (HTML; <b> highlights a key term)
-     exk    "numbers" | "analogy" | "scenario" | "visual"
+     body   1–3 short sentences (HTML; <b> highlights a key term)
+     exk    "numbers" | "analogy" | "scenario" | "visual" (omit exk and ex on a card the story alone carries)
      ex     the example (HTML: <p>, TB() table, <div class="calc"> lines, or a diagram: WF, BARS, SPLIT, FLOW, VS)
-     take   one-sentence takeaway (plain text)
+     take   optional one-sentence takeaway (plain text)
      more   {d: deeper explanation (HTML), f: optional formula (plain text)}
      rel    1–3 ids of related interview questions in the main bank (for "Test me")
      k      1–3 concept tags from CHILL_TAGS (Rabbit hole and More like this follow them)
+     p      the big idea behind the card, a key of CHILL_IDEAS. Several cards share each idea, each from its own angle,
+            so the feed can bring the idea back in a new context (passive repetition)
+     iv     optional interview connection, a key of CHILL_IV, shown as a small label ("Interview connection: …")
+     hyp    true when the card's company, deal or numbers are made up (shown as "Hypothetical"); never on real stories
      core   true for must-know ideas the feed brings back more often */
+window.CHILL_IDEAS = {
+  "profit-not-cash": "Profit isn't cash", "growth-needs-cash": "Growth has to be paid for", "tax-shields": "Non-cash costs still save tax",
+  "statements-tie": "The three statements always tie", "whole-vs-owners": "Whole business vs what owners get", "claims-ladder": "Lenders get paid before owners",
+  "leverage-magnifies": "Debt magnifies wins and losses", "time-value": "A dollar today beats a dollar later", "risk-price": "More risk, higher required return",
+  "multiples-shortcut": "A multiple is shorthand for growth and risk", "far-future": "Most value sits far in the future", "control-costs": "Buyers pay up for control",
+  "deal-math": "A deal helps EPS only if it earns more than it costs", "every-claim": "Every claim on the shares counts", "expectations": "Prices reflect expectations, not results",
+  "assumptions": "A model is only as good as its assumptions"
+};
+window.CHILL_IV = {
+  "three-statements": "Three-statement accounting", "cash-flow": "Cash flow and working capital", "ev-equity": "Enterprise vs equity value",
+  "multiples": "Valuation multiples", "comps": "Comps and precedent deals", "methods": "Choosing a valuation method", "dcf": "DCF",
+  "wacc": "WACC and cost of capital", "terminal": "Terminal value", "accretion": "Accretion / dilution", "purchase": "Purchase accounting",
+  "deal-structure": "Deal structure and financing", "lbo-returns": "LBO returns", "lbo-debt": "LBO debt and leverage",
+  "diluted-shares": "Diluted share count", "taxes": "Taxes and deferred taxes", "modeling": "Model building"
+};
 window.CHILL_TAGS = {
   "three-statements": "The three statements", "cash-vs-profit": "Cash vs profit", "depreciation": "Depreciation", "working-capital": "Working capital",
   "deferred-revenue": "Deferred revenue", "deferred-tax": "Deferred taxes", "goodwill": "Goodwill", "leases": "Leases", "sbc": "Stock-based pay",

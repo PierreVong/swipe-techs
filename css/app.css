@@ -577,3 +577,9 @@ button.badge.rh-exit { border: 0; font: inherit; font-family: var(--body); font-
   .has-stat .hook { font-size: 18.5px; }
   .rh-chip { min-height: 32px; font-size: 13px; }
 }
+
+/* Chill round 3: big idea echoes, hypothetical scenarios, interview connections */
+.idea { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--topic); letter-spacing: .01em; }
+.badge.hyp { color: var(--muted); background: transparent; border: 1px solid color-mix(in srgb, var(--line) 80%, transparent); padding: 0 7px; }
+.ivc { margin: 0; font-size: 12.5px; color: var(--muted); }
+.ivc::before { content: "🎯 "; }
