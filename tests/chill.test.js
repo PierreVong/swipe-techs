@@ -129,3 +129,14 @@ test("Chill HTML is well formed", () => {
   };
   for (const x of CB) { check(x.body, x.id + " body"); check(x.ex, x.id + " ex"); check(x.more.d, x.id + " more"); }
 });
+
+test("bridges are short, real and cross topics", () => {
+  const ids = new Set(CB.map(x => x.id)), cat = Object.fromEntries(CB.map(x => [x.id, x.c]));
+  const B = window.CHILL_BRIDGES || [];
+  assert.ok(B.length >= 25, `${B.length} bridges`);
+  for (const path of B) {
+    assert.ok(path.length >= 2 && path.length <= 3, path.join(" → "));
+    path.forEach(id => assert.ok(ids.has(id), `${id} in a bridge doesn't exist`));
+    assert.ok(new Set(path.map(id => cat[id])).size >= 2, `${path.join(" → ")} stays in one topic`);
+  }
+});
