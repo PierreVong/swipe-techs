@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-10-12T01:13:10.268Z",
+ "generated": "2026-10-12T13:46:59.539Z",
  "stories": [
   {
    "id": "credit-20261009-ust10",
@@ -33,6 +33,86 @@
    "event": "2026-10-09T20:00:00Z",
    "verified": "2026-10-12T01:30:00Z",
    "updates": []
+  },
+  {
+   "id": "ipo-20261009-da8dac",
+   "key": "sec:0001193125-26-419203",
+   "cat": "ipo",
+   "status": "priced",
+   "sig": 62,
+   "hook": "Biopharmaceutical company TRex Bio prices its initial public offering",
+   "what": "TRex Bio, Inc. priced its initial public offering of 8,333,334 shares of common stock at $14.00 per share, raising $116,666,676 in total.",
+   "why": "An IPO provides primary capital for early-stage biotech research while creating a public valuation benchmark.",
+   "ib": "Equity capital markets underwriting fees and dilution.",
+   "chain": [
+    "IPO pricing",
+    "Underwriting fees",
+    "Proceeds raised",
+    "Public valuation"
+   ],
+   "ctx": "Initial public offerings allow clinical-stage biopharmaceutical companies to fund long-term drug development pipelines through public equity markets.",
+   "concepts": [
+    "xv18"
+   ],
+   "src": {
+    "name": "SEC filing (TRex Bio, Inc.)",
+    "url": "https://www.sec.gov/Archives/edgar/data/2139097/000119312526419203/project_dino_-_424b4.htm"
+   },
+   "published": "2026-10-09T21:00:00.000Z",
+   "event": null,
+   "verified": "2026-10-12T13:46:59.539Z",
+   "thread": "ipo:2139097",
+   "origin": "auto",
+   "writer": "gemini-flash-lite-latest",
+   "updates": [],
+   "ciks": [
+    2139097
+   ],
+   "parties": [
+    "TRex Bio, Inc."
+   ]
+  },
+  {
+   "id": "ipo-20261009-191bba",
+   "key": "sec:0001213900-26-108587",
+   "cat": "ipo",
+   "status": "priced",
+   "sig": 62,
+   "hook": "Retension Pharmaceuticals prices its initial public offering on Nasdaq",
+   "what": "Retension Pharmaceuticals, Inc. priced its initial public offering of 3,750,000 shares of common stock at $12.00 per share, raising $45,000,000.",
+   "why": "An IPO provides a company with primary capital to fund operations while establishing a public market valuation.",
+   "ib": "Equity capital markets professionals manage the underwriting process, pricing, and distribution of newly issued shares.",
+   "chain": [
+    "Primary issuance",
+    "Underwriting spread",
+    "Equity capital markets",
+    "Public valuation"
+   ],
+   "ctx": "Initial public offerings allow private companies to access public equity markets, providing liquidity to early investors and capital for growth.",
+   "concepts": [
+    "xe1",
+    "xe6"
+   ],
+   "src": {
+    "name": "SEC filing (Retension Pharmaceuticals, Inc.)",
+    "url": "https://www.sec.gov/Archives/edgar/data/2002988/000121390026108587/ea0276911-10.htm"
+   },
+   "published": "2026-10-09T21:00:00.000Z",
+   "event": null,
+   "verified": "2026-10-12T13:46:59.539Z",
+   "thread": "ipo:2002988",
+   "origin": "auto",
+   "writer": "gemini-flash-lite-latest",
+   "updates": [],
+   "ciks": [
+    2002988
+   ],
+   "parties": [
+    "Retension Pharmaceuticals, Inc.",
+    "Leerink Partners",
+    "Guggenheim Securities",
+    "Oppenheimer & Co."
+   ]
   },
   {
    "id": "ma-20261006-wbd",
@@ -327,5 +407,8 @@
    ]
   }
  ],
- "seenKeys": {}
+ "seenKeys": {
+  "sec:0001193125-26-419203": 1791812819539,
+  "sec:0001213900-26-108587": 1791812819539
+ }
 }
