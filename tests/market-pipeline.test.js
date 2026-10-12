@@ -60,6 +60,8 @@ const quiet = () => {};
 
 // ---------- helpers ----------
 test("feeds, numbers and quotes parse the way the checks rely on", async () => {
+  const { dollars } = await import("../tools/market/lib/text.mjs");
+  assert.deepEqual(dollars("8,333,334 shares at $14.00 per share, raising $116,666,676; up to $1.6 billion or $250 million"), [14, 116666676, 1.6e9, 250e6]);
   const [, T] = await load();
   const items = T.feedItems(FED_RSS);
   assert.equal(items.length, 2);
@@ -181,7 +183,12 @@ test("archive: stories past their window drop out; evergreen ones stay for a yea
     { ...base, id: "old", published: "2026-07-01T00:00:00Z" },
     { ...base, id: "keep", cat: "fed", evergreen: true, published: "2026-03-01T00:00:00Z" },
     { ...base, id: "new", published: "2026-10-11T00:00:00Z" },
+    // IPOs: only offerings of $200M or more are worth a card (the size comes from What happened, already checked).
+    { ...base, id: "ipo-small", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X priced 3,750,000 shares at $12.00 per share, raising $45,000,000." },
+    { ...base, id: "ipo-nosize", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X priced its IPO at $18.00 per share." },
+    { ...base, id: "ipo-big", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X raised $1.2 billion selling 40 million shares at $30 each." },
+    { ...base, id: "ipo-manual", cat: "ipo", status: "priced", origin: "manual", published: "2026-10-11T00:00:00Z", what: "Hand-checked." },
   ] };
   const { data } = await run({ prev, now: NOW, env: {}, fetchImpl: fakeFetch({ failAll: true }), log: quiet, retryMs: 0 });
-  assert.deepEqual(data.stories.map(x => x.id).sort(), ["keep", "new"]);
+  assert.deepEqual(data.stories.map(x => x.id).sort(), ["ipo-big", "ipo-manual", "keep", "new"]);
 });
