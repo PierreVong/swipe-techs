@@ -48,6 +48,38 @@
   let ch = CH.load(storage);
   const persistChill = () => CH.save(storage, ch);
 
+  // Market Feed: short news stories inside Chill (Concepts / Markets / Mixed). Own store, never touches study progress.
+  const MK = window.MARKET;
+  const mk = MK.load(storage);
+  const persistMk = () => MK.save(storage, mk);
+  // The pipeline publishes to the market-data branch (no site rebuild needed); the copy shipped with the app is the fallback.
+  const MARKET_URLS = window.MARKET_URLS || ["https://raw.githubusercontent.com/PierreVong/swipe-techs/market-data/market.json", "data/market.json"];
+  let news = [], newsById = {}, newsLoading = null, newsFailed = false;
+  function setNews(stories) { news = MK.clean({ stories }); newsById = Object.fromEntries(news.map(x => [x.id, x])); }
+  { const c = MK.cached(storage); if (c) setNews(c.stories); }
+  // Fetch stories at most once an hour (a cached copy covers the rest, and offline use). Newer file wins.
+  function loadNews() {
+    const c = MK.cached(storage), now = Date.now();
+    if (!MK.stale(c, now) || newsLoading) return newsLoading || Promise.resolve();
+    newsLoading = (async () => {
+      for (const u of MARKET_URLS) {
+        try {
+          const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 8000);
+          const r = await fetch(u, { cache: "no-cache", signal: ctl.signal });
+          clearTimeout(to);
+          if (!r.ok) continue;
+          const d = await r.json(), stories = MK.clean(d);
+          const older = c && c.generated && d.generated && Date.parse(d.generated) < Date.parse(c.generated);
+          const keep = older ? c : { generated: d.generated || null, stories };
+          MK.cache(storage, keep, Date.now()); setNews(keep.stories); newsFailed = false;
+          return;
+        } catch (e) { /* offline or blocked: try the next source */ }
+      }
+      newsFailed = !news.length;
+    })().finally(() => { newsLoading = null; newsArrived(); });
+    return newsLoading;
+  }
+
   // Stable order for new cards: Top 100 first, easier first, otherwise shuffled (same order every visit).
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
   const ORDER = {};
@@ -130,6 +162,8 @@
   let chillQueue = [];    // concepts to show next before the picker: the card to resume on, or a Rabbit hole
   let chillChipAt = -99;  // session position of the last card that offered a Rabbit hole on its face
   let drill = null;       // {ids, next}: "Test me" from a Chill card
+  let newsShown = [];     // stories shown since the app opened (never twice in a session)
+  let sinceNews = Infinity, lastKind = null, prevNews = null;   // Mixed feed rhythm: concept cards since the last story
   let dwell = null, curEl = null;
   let privShuffle = null; // this session's shuffled order for the private collection
 
@@ -174,22 +208,39 @@
     if (chillSaved) return ch.bm.filter(id => chillById[id]);
     return CBANK.filter(x => !ch.cats.length || ch.cats.includes(x.c)).map(x => x.id);
   }
+  const chillFeed = () => chillSaved ? "concepts" : mk.feed;
   function appendChill() {
-    const ids = chillIds();
+    const ids = chillIds(), sel = chillFeed();
     // Saved concepts play through once; the main feed keeps going.
     let q = null;
     while (chillQueue.length && !q) { const x = chillQueue.shift(); if (chillById[x.id]) q = x; }
+    // Markets: only stories. Mixed: a story after a couple of concepts, never two in a row.
+    if (!q && sel !== "concepts") {
+      const want = sel === "markets" || (lastKind !== "news" && MK.newsTurn(sinceNews, news.length > 0, Math.random));
+      const x = want ? MK.pick(mk, news, { now: Date.now(), shown: newsShown, prev: prevNews }) : null;
+      if (x) return appendNews(x);
+      if (sel === "markets") { appendEnd(); return false; }
+    }
+    // Right after a story, now and then the concept behind it (🔗 Markets → DCF).
+    if (!q && lastKind === "news" && prevNews && Math.random() < 0.5) {
+      const nx = (prevNews.concepts || []).find(id => chillById[id] && ids.includes(id) && !chillSession.includes(id));
+      if (nx) q = { id: nx, news: true };
+    }
     const why = {};
-    const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session: chillSession, meta: CHILL_META, now: Date.now(), out: why });
+    // A story breaks a connected run of concepts, so the next concept doesn't claim to build on it.
+    const session = lastKind === "news" ? chillSession.concat([""]) : chillSession;
+    const id = q ? q.id : chillSaved && ids.every(x => slides.some(s => s.id === x)) ? null : CH.pick(ch, ids, { session, meta: CHILL_META, now: Date.now(), out: why });
     if (!id) { appendEnd(); return false; }
     const prev = chillSession[chillSession.length - 1];
-    const s = { kind: "chill", id, first: !chillSession.length && !chillSaved, rh: q && q.rh };
+    const s = { kind: "chill", id, first: !chillSession.length && !newsShown.length && !chillSaved, rh: q && q.rh };
     // Builds on the card before it (a short connected run), or brings back a big idea from a while ago in a new context.
+    if (q && q.news) s.link = { from: "news" };
     if (!q && !chillSaved && why.why === "run") s.link = { from: prev && chillById[prev] ? chillById[prev].c : null };
     if (!q && !chillSaved && why.why === "echo") s.echo = true;
     // Now and then (a must-know idea, at most every fifth card) the card itself offers a Rabbit hole.
     if (!q && !chillSaved && !s.first && chillById[id].core && chillSession.length - chillChipAt >= 5) s.chip = true;
     if (prev !== id) chillSession.push(id);
+    sinceNews++; lastKind = "chill";
     const chipBefore = chillChipAt;
     s.el = renderChill(s);
     feed.append(s.el); slides.push(s); observer.observe(s.el);
@@ -197,6 +248,26 @@
     const chip = s.el.querySelector(".rh-chip"), sc = s.el.querySelector(".card-scroll");
     if (chip && sc.scrollHeight > sc.clientHeight + 2) { chip.remove(); s.chip = false; chillChipAt = chipBefore; }
     return true;
+  }
+  function appendNews(x) {
+    const s = { kind: "news", id: x.id, first: !chillSession.length && !newsShown.length };
+    newsShown.push(x.id); prevNews = x; sinceNews = 0; lastKind = "news";
+    s.el = renderNews(s);
+    feed.append(s.el); slides.push(s); observer.observe(s.el);
+    // On a short screen, the concept chain is the first thing to go before the card would need scrolling.
+    const sc = s.el.querySelector(".card-scroll"), chain = s.el.querySelector(".chain");
+    if (chain && sc.scrollHeight > sc.clientHeight + 2) chain.remove();
+    return true;
+  }
+  // Stories arrived (or failed): if Markets was waiting on them, start the feed.
+  function newsArrived() {
+    if (mode !== "chill" || chillFeed() === "concepts") return;
+    const s = slides[cur];
+    if (s && s.kind === "end" && slides.length - 1 === cur) {
+      slides.pop().el.remove(); ended = false;
+      ensureAhead();
+      if (slides[cur]) { slides[cur].el.scrollIntoView({ block: "start" }); setCur(cur); }
+    }
   }
 
   function append() {
@@ -222,6 +293,11 @@
   }
 
   function endHTML() {
+    if (mode === "chill" && chillFeed() === "markets") return `<article class="card panel" style="--topic: var(--t-mkt)"><div class="card-scroll">
+      <h2 class="q">${newsLoading ? "Loading market stories…" : newsFailed ? "Market stories couldn't load." : "You're caught up on markets."}</h2>
+      <p class="think">${newsLoading ? "One moment." : newsFailed ? "Check your connection. Concept cards still work offline." : "New stories arrive every few hours. Concepts are always here."}</p>
+      ${newsLoading ? "" : '<div class="rowbtns"><button class="primary" data-act="feed-mixed">Switch to Mixed</button></div>'}
+    </div></article>`;
     if (mode === "chill") return `<article class="card panel" style="--topic: var(--accent)"><div class="card-scroll">
       <h2 class="q">${chillSaved ? (ch.bm.length ? "That's all your saved concepts." : "No saved concepts yet.") : "Nothing in this selection."}</h2>
       <p class="think">${chillSaved ? "Tap the bookmark on any Chill card to keep it here." : "Pick another topic or go back to the mixed feed."}</p>
@@ -339,10 +415,10 @@
         </div>
       </div>`;
     // A run that crosses topics names the jump where the topic goes (🔗 Accounting → LBO); within one topic it gets the badge.
-    const cross = !s.rh && s.link && s.link.from && s.link.from !== x.c && CATS[s.link.from];
+    const cross = !s.rh && s.link && s.link.from && s.link.from !== x.c && (CATS[s.link.from] || s.link.from === "news");
     el.innerHTML = `<article class="card chill-card t-${x.t}${x.stat ? " has-stat" : ""}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${cross ? `<span aria-hidden="true">🔗</span> ${esc(CATS[s.link.from].short || CATS[s.link.from].name)} → ${esc(CATS[x.c].short || CATS[x.c].name)}` : esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${x.hyp ? '<span class="badge hyp">Hypothetical</span>' : ""}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link && !cross ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${cross ? `<span aria-hidden="true">🔗</span> ${s.link.from === "news" ? "Markets" : esc(CATS[s.link.from].short || CATS[s.link.from].name)} → ${esc(CATS[x.c].short || CATS[x.c].name)}` : esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${x.hyp ? '<span class="badge hyp">Hypothetical</span>' : ""}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link && !cross ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">
@@ -364,6 +440,57 @@
     return el;
   }
 
+  // ---------- Market stories ----------
+  const fmtDay = t => { const d = new Date(t), y = new Date().getFullYear(); return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d.getFullYear() === y ? {} : { year: "numeric" }) }); };
+  const ago = (t, now) => { const h = Math.floor((now - Date.parse(t)) / 3600000); return h < 1 ? "just now" : h < 24 ? `${h} h ago` : `${Math.floor(h / 24)} day${h >= 48 ? "s" : ""} ago`; };
+  const link = (src, text) => `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  function renderNews(s) {
+    const x = newsById[s.id], now = Date.now();
+    const sg = MK.stage(x, now) || { key: "recent", label: "Recent news" };
+    const el = document.createElement("section");
+    el.className = "slide";
+    // Facts first, then interpretation. Later stages swap "Why it matters" for the broader context written with the
+    // story; new facts only ever arrive as dated, sourced updates.
+    const ups = (x.updates || []).filter(u => Date.parse(u.t) <= now).sort((a, b) => Date.parse(b.t) - Date.parse(a.t));
+    const seen = mk.seen[x.id], newUp = ups.length && (!seen || ups.length > (seen.u || 0)) && seen;
+    const lens = MK.lens(x, sg);
+    const whyLbl = sg.key === "hist" ? "Why it's still worth knowing" : lens ? "The bigger picture" : "Why it matters";
+    const upd = ups.length ? `<p class="nupd"><b>Update, ${esc(fmtDay(ups[0].t))}:</b> ${esc(ups[0].text)} <span class="nsrc">${esc(ups[0].src.name)} ${link(ups[0].src, '<span aria-hidden="true">↗</span><span class="sr-only">source</span>')}</span></p>` : "";
+    const chain = (x.chain || []).length ? `<div class="chain" aria-label="${esc(x.chain.join(", then "))}">${x.chain.map(c => `<span>${esc(c)}</span>`).join('<i aria-hidden="true">→</i>')}</div>` : "";
+    const rel = newsRabbitIds(x);
+    el.innerHTML = `<article class="card chill-card news-card st-${x.status}" style="--topic: var(--t-mkt)" aria-label="Market story">
+      <div class="card-head">
+        <div class="meta"><span class="cat"><span aria-hidden="true">📈</span> ${esc(MK.CATS[x.cat])}</span><span class="dot">·</span><span class="ctype">${esc(sg.label)}</span><span class="badge nst">${esc(MK.STATUS[x.status])}</span>${newUp ? '<span class="badge new">New update</span>' : ""}</div>
+      </div>
+      <div class="card-scroll">
+        <div class="chill-body">
+          <h2 class="hook">${esc(x.hook)}</h2>
+          ${upd}
+          <div class="nsec"><div class="lbl">What happened</div><p>${esc(x.what)}</p>${x.uncertain ? `<p class="nunc"><b>Not final yet:</b> ${esc(x.uncertain)}</p>` : ""}</div>
+          <div class="nsec why"><div class="lbl">${whyLbl}</div><p>${esc(lens || x.why)}</p></div>
+          <div class="nsec ib"><div class="lbl">IB connection</div><p>${esc(x.ib)}</p>${chain}</div>
+          <p class="nsrc">Source: ${esc(x.src.name)} · ${esc(fmtDay(x.event || x.published))} · ${esc(ago(x.published, now))}</p>
+          ${s.first ? '<p class="swipe-hint" aria-hidden="true">Swipe up for the next one</p>' : ""}
+        </div>
+      </div>
+      <div class="foot chill-foot">
+        ${link(x.src, '<span>Read more</span> <span aria-hidden="true">↗</span>').replace("<a ", '<a class="more-btn read-more" ')}
+        ${rel.length ? `<button class="try-btn rh-news" title="Concept cards behind this story">Related concepts <span aria-hidden="true">→</span></button>` : ""}
+      </div>
+    </article>`;
+    return el;
+  }
+  // The Chill concepts a story connects to, then their closest relatives, for the Rabbit hole.
+  function newsRabbitIds(x) {
+    const done = new Set(chillSession), own = (x.concepts || []).filter(id => chillById[id] && !done.has(id));
+    const more = own.length ? CH.related(ch, own[0], CBANK.map(c => c.id).filter(id => !done.has(id) && !own.includes(id)), CHILL_META, 4) : [];
+    return [...own, ...more].slice(0, 4);
+  }
+  function markNewsSeen(s) {
+    if (s.counted || !newsById[s.id]) return;
+    s.counted = true; MK.markSeen(mk, newsById[s.id], Date.now()); persistMk();
+  }
+
   function toggleMore(s) {
     const b = s.el.querySelector(".more-btn"), body = s.el.querySelector(".more-body");
     const open = b.getAttribute("aria-expanded") !== "true";
@@ -377,9 +504,9 @@
     return CH.related(ch, id, CBANK.map(x => x.id).filter(x => !done.has(x)), CHILL_META, 4);
   }
   function startRabbit(s) {
-    const ids = rabbitIds(s.id);
+    const ids = s.kind === "news" ? newsRabbitIds(newsById[s.id]) : rabbitIds(s.id);
     if (!ids.length) return;
-    CH.interest(ch, s.id); persistChill();
+    if (s.kind === "news") markNewsSeen(s); else { CH.interest(ch, s.id); persistChill(); }
     // Drop the cards already lined up after this one, then put the related concepts next.
     slides.splice(cur + 1).forEach(x => { observer.unobserve(x.el); x.el.remove(); const k = chillSession.lastIndexOf(x.id); if (k > -1) chillSession.splice(k, 1); });
     ended = false;
@@ -643,6 +770,11 @@
     if (act) return panelAction(act.dataset.act);
     const s = slideOf(e.target); if (!s) return;
     const t = e.target;
+    if (s.kind === "news") {
+      if (t.closest(".rh-news")) return startRabbit(s);
+      if (t.closest("a")) markNewsSeen(s);
+      return;
+    }
     if (s.kind === "chill") {
       if (t.closest(".bm")) return toggleChillBm(s);
       if (t.closest(".more-btn")) return toggleMore(s);
@@ -693,6 +825,7 @@
     clearTimeout(dwell);
     // A concept counts as seen once it has been on screen for a couple of seconds (fast flicks don't count).
     if (s.kind === "chill") dwell = setTimeout(() => { if (slides[cur] === s) markChillSeen(s); }, 2000);
+    if (s.kind === "news") dwell = setTimeout(() => { if (slides[cur] === s) markNewsSeen(s); }, 2000);
     if (s.kind === "chill" && mode === "chill") tipDoubleTap(s);
     if (s.kind === "chill" && !chillSaved) { CH.setPos(ch, s.id, chillSession.slice(0, chillSession.lastIndexOf(s.id) + 1), Date.now()); persistChill(); }
     if (s.kind === "card" && mode === "interview" && !s.t0) s.t0 = Date.now();
@@ -731,7 +864,9 @@
     if (mode !== "chill") chillSaved = false;
     if (mode !== "drill") drill = null;
     chillQueue = []; chillChipAt = -99;
-    if (mode === "chill" && !chillSaved) {
+    sinceNews = Infinity; lastKind = null; prevNews = null;
+    if (mode === "chill" && chillFeed() !== "concepts") loadNews();
+    if (mode === "chill" && !chillSaved && chillFeed() !== "markets") {
       // Pick up where you left off: same card, and no repeats of what you saw before closing the app.
       const r = CH.resume(ch, Date.now());
       if (r && chillIds().includes(r.id)) { chillSession = r.session; chillQueue = [{ id: r.id }]; }
@@ -801,6 +936,7 @@
   function panelAction(a) {
     if (a === "foryou") return setMode("foryou");
     if (a === "chill") return setMode("chill");
+    if (a === "feed-mixed") return setFeed("mixed");
     if (a === "priv") return openSheet("privSheet");
     if (a === "priv-again") {
       if (privPrefs().path === "seq") { P.restart(privPrefs().cur, privIds().map(id => byId[id])); persist(); }
@@ -864,17 +1000,31 @@
       text = `Top 100 · ${m} mastered`;
     } else if (mode === "bookmarks") {
       text = `Bookmarks · ${st.bookmarks.filter(id => byId[id]).length} saved`;
+    } else if (mode === "chill" && chillSaved) {
+      text = "🌙 Chill · Saved concepts";
     } else if (mode === "chill") {
-      const sel = chillSaved ? "Saved concepts" : ch.cats.length ? ch.cats.map(c => CATS[c].short || CATS[c].name).join(", ") : "Mixed feed";
-      text = `🌙 Chill · ${sel}`; b = chillSaved ? "Exit" : "Topics";
+      // Concepts / Markets / Mixed; Topics narrows the concept cards.
+      text = "🌙"; b = mk.feed === "markets" ? "" : ch.cats.length ? `Topics · ${ch.cats.length}` : "Topics";
     } else if (mode === "drill") {
       const s = slides[cur];
       const n = s && s.kind === "card" ? drill.ids.indexOf(s.id) + 1 : drill.ids.length;
       text = `Test me · question ${n} of ${drill.ids.length}`; b = "Back to Chill";
     }
     ctx.hidden = !text;
-    label.textContent = text; btn.textContent = b;
+    label.textContent = text; btn.textContent = b; btn.hidden = !b;
+    const fs = $("#feedSel"), on = mode === "chill" && !chillSaved;
+    fs.hidden = !on; ctx.classList.toggle("has-feed", on);
+    if (on) fs.querySelectorAll("[data-feed]").forEach(x => x.setAttribute("aria-checked", x.dataset.feed === mk.feed));
   }
+  function setFeed(f) {
+    if (!MK.FEEDS.includes(f)) return;
+    mk.feed = f; persistMk();
+    announce(f === "markets" ? "Market stories" : f === "mixed" ? "Concepts and market stories" : "Concepts");
+    rebuild();
+  }
+  $("#feedSel").addEventListener("click", e => { const b = e.target.closest("[data-feed]"); if (b && b.dataset.feed !== mk.feed) setFeed(b.dataset.feed); });
+  // Coming back to the app later: refresh stories in the background (at most hourly) so the feed never needs a manual refresh.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && mode === "chill" && chillFeed() !== "concepts") loadNews(); });
   $("#ctxBtn").addEventListener("click", () => {
     if (mode === "topic") openSheet("topicSheet");
     else if (mode === "priv") openSheet("privSheet");
@@ -993,11 +1143,11 @@
   $("#collBm").addEventListener("click", () => { closeSheet(); mode = "bookmarks"; interview = null; rebuild(); });
   $("#collChill").addEventListener("click", () => { closeSheet(); mode = "chill"; chillSaved = true; interview = null; rebuild(); });
 
-  // Chill topic picker: Mixed feed (default) or chosen topics.
+  // Chill topic picker: All topics (default) or chosen topics. Applies to concept cards only.
   let chillDraft = [];
   function drawChillTopics() {
     const cc = $("#chillChips"); cc.innerHTML = "";
-    cc.append(chip("Mixed feed", !chillDraft.length, () => { chillDraft = []; drawChillTopics(); }));
+    cc.append(chip("All topics", !chillDraft.length, () => { chillDraft = []; drawChillTopics(); }));
     CHILL_CATS.forEach(k => cc.append(chip(CATS[k].name, chillDraft.includes(k), () => {
       chillDraft = chillDraft.includes(k) ? chillDraft.filter(x => x !== k) : [...chillDraft, k];
       if (chillDraft.length === CHILL_CATS.length) chillDraft = [];
@@ -1005,7 +1155,7 @@
     }, `--t-${k}`)));
     const pool = CBANK.filter(x => !chillDraft.length || chillDraft.includes(x.c));
     const fresh = pool.filter(x => !ch.seen[x.id]).length;
-    $("#chillSel").textContent = chillDraft.length ? chillDraft.map(c => CATS[c].short || CATS[c].name).join(", ") : "Mixed feed · every topic";
+    $("#chillSel").textContent = chillDraft.length ? chillDraft.map(c => CATS[c].short || CATS[c].name).join(", ") : "All topics";
     $("#chillCount").textContent = `${pool.length} concepts · ${fresh} not seen yet`;
   }
   $("#chillStart").addEventListener("click", () => {
@@ -1263,6 +1413,11 @@
     const onButton = e.target.closest && e.target.closest("button");
     if (k === "arrowdown" || k === "j" || k === "pagedown") { e.preventDefault(); goTo(cur + 1); return; }
     if (k === "arrowup" || k === "k" || k === "pageup") { e.preventDefault(); goTo(cur - 1); return; }
+    if (s && s.kind === "news") {
+      if ((k === " " || k === "enter") && !onButton && !e.target.closest("a")) { e.preventDefault(); goTo(cur + 1); }
+      else if (k === "r") startRabbit(s);
+      return;
+    }
     if (s && s.kind === "chill") {
       if ((k === " " || k === "enter") && !onButton) { e.preventDefault(); goTo(cur + 1); }
       else if (k === "b") toggleChillBm(s);
@@ -1303,5 +1458,5 @@
   applyTheme();
   updateHeader();
   rebuild();
-  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: (id, o) => renderChill({ id, ...o }), priv: { status: priv.status, count: PBANK.length, src } };   // for tests
+  window.__swipe = { get st() { return st; }, get slides() { return slides; }, get cur() { return cur; }, get mode() { return mode; }, get chill() { return ch; }, renderChill: (id, o) => renderChill({ id, ...o }), renderNews: id => renderNews({ id }), get market() { return mk; }, get news() { return news; }, priv: { status: priv.status, count: PBANK.length, src } };   // for tests
 })();

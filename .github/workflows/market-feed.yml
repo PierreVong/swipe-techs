@@ -1,0 +1,66 @@
+# Market Feed: every 4 hours, collect official sources, write checked story cards, and publish them to the
+# market-data branch (the app reads market.json from there, so the site itself never needs rebuilding).
+# Secrets/variables (Settings -> Secrets and variables -> Actions):
+#   GEMINI_API_KEY (secret)  free Google AI Studio key for the summaries; without it only fixed-wording stories go out
+#   SEC_CONTACT (variable)   an email for the User-Agent SEC requires; without it SEC filings are skipped
+#   GUARDIAN_API_KEY (secret, optional)  Guardian Open Platform key for wider market coverage
+name: Market Feed
+
+on:
+  schedule:
+    - cron: "23 */4 * * *"
+  workflow_dispatch:
+  # TEMPORARY: one live run from the PR branch before merge. Removed before the PR is marked ready.
+  push:
+    branches: [market-feed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-feed
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get the stories published last time
+        run: |
+          if git fetch --depth=1 origin +refs/heads/market-data:refs/remotes/origin/market-data 2>/dev/null; then
+            git show origin/market-data:market.json > "$RUNNER_TEMP/prev.json" || echo '{}' > "$RUNNER_TEMP/prev.json"
+          else
+            echo '{}' > "$RUNNER_TEMP/prev.json"
+          fi
+
+      - name: Collect, write and check stories
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GUARDIAN_API_KEY: ${{ secrets.GUARDIAN_API_KEY }}
+          SEC_CONTACT: ${{ vars.SEC_CONTACT || secrets.SEC_CONTACT }}
+        run: node tools/market/run.mjs --prev "$RUNNER_TEMP/prev.json" --seed data/market.json --out "$RUNNER_TEMP/out"
+
+      - name: Publish to the market-data branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse --verify -q origin/market-data >/dev/null; then
+            git worktree add -B market-data "$RUNNER_TEMP/pub" origin/market-data
+          else
+            git worktree add --orphan -b market-data "$RUNNER_TEMP/pub"
+          fi
+          cp "$RUNNER_TEMP/out/market.json" "$RUNNER_TEMP/out/status.json" "$RUNNER_TEMP/pub/"
+          cd "$RUNNER_TEMP/pub"
+          git add market.json status.json
+          if git diff --cached --quiet; then echo "Nothing new."; exit 0; fi
+          git commit -q -m "Market Feed update $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin market-data
