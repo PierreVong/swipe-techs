@@ -1,0 +1,331 @@
+{
+ "v": 1,
+ "generated": "2026-10-12T01:13:10.268Z",
+ "stories": [
+  {
+   "id": "credit-20261009-ust10",
+   "cat": "credit",
+   "status": "data",
+   "sig": 75,
+   "thread": "ust10",
+   "origin": "manual",
+   "hook": "Borrowing costs keep climbing: the 10-year is at 5.24%",
+   "what": "The 10-year Treasury yield ended Oct. 9 at 5.24%, up from 4.79% on Sept. 1.",
+   "why": "It's the benchmark for mortgages and corporate bonds, so borrowing gets pricier.",
+   "ib": "It's the usual risk-free rate in a DCF: higher yield, higher cost of equity and WACC, lower valuations.",
+   "chain": [
+    "10-year yield",
+    "Risk-free rate",
+    "WACC",
+    "DCF value"
+   ],
+   "ctx": "With yields above 5%, debt-funded deals get harder: interest eats into EPS accretion and LBO returns.",
+   "concepts": [
+    "xd8",
+    "xd11",
+    "xl14"
+   ],
+   "src": {
+    "name": "U.S. Department of the Treasury",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve&field_tdr_date_value_month=202610"
+   },
+   "published": "2026-10-09T21:00:00Z",
+   "event": "2026-10-09T20:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "ma-20261006-wbd",
+   "cat": "ma",
+   "status": "completed",
+   "sig": 92,
+   "evergreen": true,
+   "thread": "deal:wbd",
+   "origin": "manual",
+   "parties": [
+    "Paramount",
+    "Warner Bros. Discovery"
+   ],
+   "hook": "Paramount completes its Warner Bros. Discovery takeover",
+   "what": "Paramount closed its cash acquisition of Warner Bros. Discovery at just over $31 a share. The combined company is now called Skydance.",
+   "why": "Closing makes it a done deal: debt is drawn, target shares are cancelled, integration begins.",
+   "ib": "Funded with $47 billion of new equity plus bank and Apollo-led debt: a textbook sources-and-uses table.",
+   "chain": [
+    "Signing",
+    "Approvals",
+    "Closing",
+    "Integration"
+   ],
+   "ctx": "Mega-mergers can take months to close; this one needed sign-off from competition authorities in nearly 70 jurisdictions.",
+   "hist": "A modern media mega-merger and a reference point for how very large deals are financed with a mix of new equity and debt.",
+   "concepts": [
+    "xl11",
+    "xm10",
+    "xm24"
+   ],
+   "src": {
+    "name": "Paramount (SEC filing)",
+    "url": "https://www.sec.gov/Archives/edgar/data/0002041610/000110465926113913/tm2626659d7_ex99-1.htm"
+   },
+   "published": "2026-10-06T12:00:00Z",
+   "event": "2026-10-06T12:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "ma-20261005-rxo",
+   "cat": "ma",
+   "status": "announced",
+   "sig": 72,
+   "thread": "deal:rxo",
+   "origin": "manual",
+   "parties": [
+    "C.H. Robinson",
+    "RXO"
+   ],
+   "hook": "C.H. Robinson agrees to buy RXO for $5.8 billion",
+   "what": "RXO holders get $17.25 in cash plus 0.0856 C.H. Robinson shares each, about $30.25 a share in total.",
+   "uncertain": "Needs regulatory and shareholder approval; expected in the first half of 2027.",
+   "why": "Paying partly in stock means less borrowing, and RXO holders share in the combined company.",
+   "ib": "Bankers model the new debt's interest and the extra shares when testing accretion/dilution.",
+   "chain": [
+    "Cash + stock",
+    "Debt + new shares",
+    "Accretion/dilution"
+   ],
+   "ctx": "Stock-and-cash deals are a middle path: less new debt for the buyer, and the target's holders share any synergies.",
+   "concepts": [
+    "xm8",
+    "xm3",
+    "xm2"
+   ],
+   "src": {
+    "name": "C.H. Robinson",
+    "url": "https://www.chrobinson.com/en-us/about-us/newsroom/press-releases/2026/ch-robinson-to-acquire-rxo/"
+   },
+   "published": "2026-10-05T12:00:00Z",
+   "event": "2026-10-05T12:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "ma-20261005-ptc",
+   "cat": "ma",
+   "status": "announced",
+   "sig": 88,
+   "thread": "deal:ptc",
+   "origin": "manual",
+   "parties": [
+    "Schneider Electric",
+    "PTC"
+   ],
+   "hook": "Schneider Electric bids $205 a share in cash for PTC",
+   "what": "Schneider Electric agreed to buy software maker PTC for $205 a share in cash, about $22.6 billion of equity, a 42.3% premium.",
+   "uncertain": "Needs shareholder and regulatory approval; closing expected by Q3 2027.",
+   "why": "That premium means Schneider expects synergies the market wasn't pricing in.",
+   "ib": "It's funded mostly with €16–17 billion of new debt, so accretion hinges on interest cost versus PTC's earnings.",
+   "chain": [
+    "Premium",
+    "Synergies",
+    "Debt + new shares",
+    "Accretion/dilution"
+   ],
+   "ctx": "Industrial companies keep buying software: recurring revenue supports high premiums and lots of acquisition debt.",
+   "concepts": [
+    "xm1",
+    "xm7",
+    "xm14"
+   ],
+   "src": {
+    "name": "PTC",
+    "url": "https://www.ptc.com/en/news/2026/schneider-electric-to-acquire-ptc"
+   },
+   "published": "2026-10-05T06:00:00Z",
+   "event": "2026-10-05T06:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "macro-20261002-jobs",
+   "cat": "macro",
+   "status": "data",
+   "sig": 80,
+   "thread": "bls:Jobs report",
+   "origin": "manual",
+   "hook": "Hiring nearly stalls: 29,000 jobs added in September",
+   "what": "Payrolls rose 29,000 and unemployment held at 4.2%. July was revised to a loss of 10,000 jobs.",
+   "why": "Slow hiring plus elevated inflation pulls the Fed two ways, so each report moves rate expectations.",
+   "ib": "Expected rates set the risk-free rate in a DCF and the cost of LBO debt.",
+   "chain": [
+    "Jobs data",
+    "Fed rate path",
+    "Discount rate",
+    "Valuation"
+   ],
+   "ctx": "Weak hiring right after a rate hike is an awkward mix for the Fed, and it shapes what deal financing costs.",
+   "concepts": [
+    "xd2",
+    "xd8",
+    "xl14"
+   ],
+   "src": {
+    "name": "U.S. Bureau of Labor Statistics",
+    "url": "https://www.bls.gov/news.release/empsit.nr0.htm"
+   },
+   "published": "2026-10-02T12:30:00Z",
+   "event": "2026-10-02T12:30:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "earnings-20260930-mu",
+   "cat": "earnings",
+   "status": "report",
+   "sig": 70,
+   "thread": "earn:MU",
+   "origin": "manual",
+   "parties": [
+    "Micron Technology"
+   ],
+   "hook": "Micron's quarterly revenue jumps nearly fivefold on AI demand",
+   "what": "Micron reported quarterly revenue of $54.23 billion, up from $11.32 billion a year earlier, and guided to about $61.5 billion next quarter.",
+   "why": "Memory chips feed AI data centers, so this shows AI spending reaching suppliers.",
+   "ib": "Growth this fast makes trailing multiples look cheap, so bankers lean on forward estimates.",
+   "chain": [
+    "Earnings",
+    "Forecasts",
+    "Forward multiple",
+    "Valuation"
+   ],
+   "ctx": "Memory chips are famously cyclical: booms have often been followed by price drops, so analysts argue over normalized earnings.",
+   "concepts": [
+    "xv8",
+    "xv7",
+    "xd22"
+   ],
+   "src": {
+    "name": "Micron Technology (SEC filing)",
+    "url": "https://www.sec.gov/Archives/edgar/data/0000723125/000072312526000018/a2026q4ex991-pressrelease.htm"
+   },
+   "published": "2026-09-30T20:00:00Z",
+   "event": "2026-09-30T20:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "ipo-20260929-accv",
+   "cat": "ipo",
+   "status": "priced",
+   "sig": 66,
+   "thread": "ipo:accv",
+   "origin": "manual",
+   "parties": [
+    "Accelevation"
+   ],
+   "hook": "A private-equity-backed IPO prices at $18 a share",
+   "what": "Accelevation priced 30 million shares at $18.00 on Nasdaq (ACCV). Two-thirds were sold by holders affiliated with Olympus Partners.",
+   "why": "Most shares came from the owners, not the company: a PE firm starting to cash out.",
+   "ib": "An IPO is a PE exit route: selling in stages locks in returns while keeping some upside.",
+   "chain": [
+    "PE owner",
+    "IPO",
+    "Partial exit",
+    "IRR"
+   ],
+   "ctx": "Bankers watch PE-backed listings: when funds can exit through IPOs, they return cash and raise money for new deals.",
+   "concepts": [
+    "xl24",
+    "xl19",
+    "xv1"
+   ],
+   "src": {
+    "name": "GlobeNewswire (Accelevation)",
+    "url": "https://www.globenewswire.com/news-release/2026/09/29/3371460/0/en/accelevation-announces-pricing-of-initial-public-offering.html"
+   },
+   "published": "2026-09-29T23:04:00Z",
+   "event": "2026-09-29T23:04:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "pe-20260921-priority",
+   "cat": "pe",
+   "status": "announced",
+   "sig": 66,
+   "thread": "deal:priority",
+   "origin": "manual",
+   "parties": [
+    "Priority Technology Holdings"
+   ],
+   "hook": "Priority Technology's CEO leads a $1.6 billion buyout",
+   "what": "A group led by CEO Thomas Priore will buy the payments firm for $8.05 a share: a $1.6 billion enterprise value.",
+   "uncertain": "Needs unaffiliated holders' approval; expected in the first half of 2027.",
+   "why": "Insiders buying out public holders have to show the price is fair.",
+   "ib": "Backed by Searchlight Capital equity, it's a management buyout: returns hinge on debt paydown and the exit.",
+   "chain": [
+    "Take-private",
+    "Leverage",
+    "Debt paydown",
+    "IRR"
+   ],
+   "ctx": "Management buyouts show the LBO toolkit in miniature: borrowed money, a premium for public holders, a plan to sell later.",
+   "concepts": [
+    "xl1",
+    "xl4",
+    "xl11"
+   ],
+   "src": {
+    "name": "Priority Technology Holdings (SEC filing)",
+    "url": "https://www.sec.gov/Archives/edgar/data/1653558/000121390026101651/ea030604701ex99-1.htm"
+   },
+   "published": "2026-09-21T12:00:00Z",
+   "event": "2026-09-21T12:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": []
+  },
+  {
+   "id": "fed-20260916-hike",
+   "cat": "fed",
+   "status": "decision",
+   "sig": 95,
+   "evergreen": true,
+   "thread": "fomc",
+   "origin": "manual",
+   "hook": "The Fed raises rates a quarter point to fight inflation",
+   "what": "The Fed voted 12–0 on Sept. 16 to raise rates 1/4 point, to 3.75%–4.00%, citing elevated inflation.",
+   "why": "Costlier borrowing lowers what investors will pay today for future profits.",
+   "ib": "Rates feed the risk-free rate and the cost of debt: WACC rises, DCF values fall, LBOs carry less debt.",
+   "chain": [
+    "Fed hike",
+    "Cost of debt",
+    "WACC",
+    "DCF value"
+   ],
+   "ctx": "Hiking while inflation runs hot is classic tightening: discount rates rise in every valuation.",
+   "hist": "A reminder that rates can rise as well as fall: every DCF, LBO and merger model leans on what money costs.",
+   "concepts": [
+    "xd8",
+    "xd9",
+    "xl14"
+   ],
+   "src": {
+    "name": "Federal Reserve",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm"
+   },
+   "published": "2026-09-16T18:00:00Z",
+   "event": "2026-09-16T18:00:00Z",
+   "verified": "2026-10-12T01:30:00Z",
+   "updates": [
+    {
+     "t": "2026-10-07T18:00:00Z",
+     "text": "Minutes out Oct. 7: most officials see another hike as likely by year end.",
+     "src": {
+      "name": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomcminutes20260916.htm"
+     }
+    }
+   ]
+  }
+ ],
+ "seenKeys": {}
+}
