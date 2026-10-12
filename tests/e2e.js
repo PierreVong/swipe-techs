@@ -28,10 +28,29 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   const URL = `http://127.0.0.1:${server.address().port}/`;
   const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
   const errors = [];
+  // Market stories: a synthetic file (not real news) with timestamps relative to now, served in place of the data branch.
+  const MKT = (() => {
+    const now = Date.now(), h = 3600000, iso = t => new Date(t).toISOString();
+    const src = (n, u) => ({ name: n, url: "https://example.com/" + u });
+    const S = o => ({ verified: iso(now - h), updates: [], ...o });
+    return { v: 1, generated: iso(now - h), stories: [
+      S({ id: "t-fed", cat: "fed", status: "decision", sig: 90, published: iso(now - 5 * h), hook: "Test central bank trims its rate a quarter point", what: "The test bank lowered its policy rate range to 4.00%–4.25%.", why: "Cheaper borrowing lifts what future cash flows are worth today.", ib: "A lower risk-free rate lowers WACC, so DCF values rise.", chain: ["Rate cut", "Cost of debt", "WACC", "DCF value"], concepts: ["xd8", "xd9"], src: src("Test Bank", "fed"), ctx: "Rate cuts lower discount rates everywhere.", evergreen: true }),
+      S({ id: "t-deal", cat: "ma", status: "announced", sig: 85, thread: "deal-1", published: iso(now - 3 * 24 * h), hook: "A $12B all-cash deal at a 30% premium", what: "Example Corp agreed to buy Sample Inc for $45 per share in cash.", uncertain: "Needs shareholder and regulatory approval.", why: "A premium means the buyer expects synergies.", ib: "Debt-funded cash deals are tested for accretion/dilution.", chain: ["Premium", "Synergies", "Accretion/dilution"], concepts: ["xm7", "xm1"], src: src("Test Wire", "deal"), updates: [{ t: iso(now - 20 * h), text: "Sample Inc shareholders approved the deal.", src: src("Test Filing", "filing") }] }),
+      S({ id: "t-pe", cat: "pe", status: "announced", sig: 70, published: iso(now - 9 * 24 * h), hook: "A buyout firm takes a software company private", what: "Test Capital agreed to buy Widget Software for $3 billion.", why: "Steady revenue supports a lot of debt.", ib: "Classic LBO: cash flow pays down debt, which drives IRR.", chain: ["Leverage", "Debt paydown", "IRR"], concepts: ["xl3", "xl2"], src: src("Test Wire", "pe"), ctx: "Software take-privates keep coming back." }),
+      S({ id: "t-rumor", cat: "ma", status: "rumor", sig: 60, published: iso(now - 10 * h), hook: "Talks reported between two chipmakers", what: "A paper reported, citing unnamed people, that Chip A is exploring a bid for Chip B.", why: "Reports like this move the target's stock before anything is signed.", ib: "Antitrust risk is a classic deal risk in a merger model.", chain: ["Rumor", "Premium", "Deal risk"], concepts: ["xm11"], src: src("Test Paper", "rumor") }),
+      S({ id: "t-old", cat: "equity", status: "report", sig: 99, published: iso(now - 40 * 24 * h), hook: "An old market move", what: "x", why: "y", ib: "z", src: src("Old", "old") }),
+    ] };
+  })();
+  const newCtx = async opts => {
+    const c = await browser.newContext(opts);
+    await c.route(/raw\.githubusercontent\.com/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MKT) }));
+    return c;
+  };
+  const conceptsOnly = c => c.addInitScript(() => { if (!localStorage.getItem("swipetechs.market.v1")) localStorage.setItem("swipetechs.market.v1", JSON.stringify({ v: 1, feed: "concepts", seen: {} })); });
   const watch = page => { page.on("pageerror", e => errors.push(e.message)); page.on("console", m => { if (m.type() === "error" && !/fonts\.g|net::ERR_FAILED/.test(m.text())) errors.push(m.text()); }); };
 
   // ---------- phone ----------
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block" });
+  const ctx = await newCtx({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block" });
   // Block Google Fonts so tests don't depend on the network.
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const page = await ctx.newPage(); watch(page);
@@ -327,8 +346,9 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
 
   // ---------- Chill Mode ----------
   console.log("Chill Mode");
-  const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
+  const ctxC = await newCtx({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
   await ctxC.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await conceptsOnly(ctxC);   // these checks are about concept cards; Market Feed has its own section
   const pC = await ctxC.newPage(); watch(pC);
   await pC.goto(URL);
   await pC.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
@@ -350,7 +370,9 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.equal(await s.el.locator(".reveal-btn, .opt, .rates, .timer").count(), 0);
     assert.equal(await s.el.locator(".more-body").isHidden(), true, "Learn more starts closed");
     assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark", "Chill uses the night palette");
-    assert.match(await pC.locator("#ctxLabel").textContent(), /Chill · Mixed feed/);
+    assert.ok(await pC.locator("#feedSel").isVisible(), "Concepts / Markets / Mixed selector");
+    assert.equal(await pC.locator('#feedSel [aria-checked="true"]').textContent(), "Concepts");
+    assert.equal(await pC.locator("#ctxBtn").textContent(), "Topics");
     const ov = await pC.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(ov <= 0, "horizontal overflow " + ov);
     await shot(pC, "chill-1");
@@ -414,7 +436,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.match(await pC.locator("#ctxLabel").textContent(), /Saved concepts/);
     await pC.locator("#ctxBtn").click();
     await pC.waitForFunction(() => window.__swipe.mode === "chill" && window.__swipe.slides.length > 0);
-    assert.match(await pC.locator("#ctxLabel").textContent(), /Mixed feed/);
+    assert.ok(await pC.locator("#feedSel").isVisible());
   });
 
   await step("Test me answers the related interview question in study mode, then returns to Chill", async () => {
@@ -442,7 +464,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.equal(await pC.evaluate(() => document.documentElement.dataset.theme), "dark");
   });
 
-  await step("Topics narrows the Chill feed and can go back to the mixed feed", async () => {
+  await step("Topics narrows the Chill feed and can go back to all topics", async () => {
     await pC.locator("#ctxBtn").click();
     await pC.locator("#chillSheet").waitFor();
     await pC.locator("#chillChips .chip", { hasText: "LBO" }).click();
@@ -454,9 +476,9 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     const cats = await pC.evaluate(ids => ids.map(id => window.CB.find(y => y.id === id).c), a.slides.filter(s => s.kind === "chill").map(s => s.id));
     assert.ok(cats.length >= 4 && cats.every(c => c === "lbo"), cats.join(","));
     assert.deepEqual(a.ch.cats, ["lbo"]);
-    assert.match(await pC.locator("#ctxLabel").textContent(), /Chill · LBO/);
+    assert.equal(await pC.locator("#ctxBtn").textContent(), "Topics · 1");
     await pC.locator("#ctxBtn").click();
-    await pC.locator("#chillChips .chip", { hasText: "Mixed feed" }).click();
+    await pC.locator("#chillChips .chip", { hasText: "All topics" }).click();
     await pC.locator("#chillStart").click();
     await pC.waitForFunction(() => window.__swipe.mode === "chill");
     a = await chillApp();
@@ -610,9 +632,113 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   });
   await ctxC.close();
 
+  // ---------- Market Feed (inside Chill) ----------
+  console.log("Market Feed");
+  const ctxM = await newCtx({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block" });
+  await ctxM.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  const pM = await ctxM.newPage(); watch(pM);
+  await pM.goto(URL);
+  await pM.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
+  const mApp = () => pM.evaluate(() => { const a = window.__swipe; return { mode: a.mode, cur: a.cur, mk: a.market, ch: a.chill, st: { cards: a.st.cards, log: a.st.log, bookmarks: a.st.bookmarks }, slides: a.slides.map(s => ({ kind: s.kind, id: s.id, rh: !!s.rh })) }; });
+  const mCur = async () => { const a = await mApp(); return { ...a.slides[a.cur], idx: a.cur, el: pM.locator(".slide").nth(a.cur) }; };
+  const mNext = async () => { const c = await mCur(); await pM.keyboard.press("ArrowDown"); await pM.waitForFunction(i => window.__swipe.cur === i, c.idx + 1, { timeout: 4000 }); return mCur(); };
+  const mStudy = JSON.stringify((await mApp()).st);
+
+  await step("Chill opens on Mixed: stories blend in between concepts, never two in a row, never repeated", async () => {
+    await pM.locator('.tab[data-mode="chill"]').click();
+    await pM.waitForFunction(() => window.__swipe.mode === "chill" && window.__swipe.news.length > 0);
+    assert.equal(await pM.locator('#feedSel [aria-checked="true"]').textContent(), "Mixed");
+    for (let i = 0; i < 14; i++) await mNext();
+    const k = (await mApp()).slides.filter(s => s.kind !== "end");
+    const kinds = k.map(s => s.kind);
+    assert.ok(kinds.includes("news") && kinds.includes("chill"), kinds.join(","));
+    for (let i = 1; i < kinds.length; i++) assert.ok(!(kinds[i] === "news" && kinds[i - 1] === "news"), "two stories in a row");
+    const news = k.filter(s => s.kind === "news").map(s => s.id);
+    assert.equal(new Set(news).size, news.length);
+    assert.ok(!news.includes("t-old"), "archived stories never show");
+  });
+
+  await step("Markets: only stories, most significant first, then a caught-up card; the choice is remembered", async () => {
+    await pM.locator('#feedSel [data-feed="markets"]').click();
+    await pM.waitForFunction(() => window.__swipe.slides.length > 0 && window.__swipe.slides[0].kind !== "chill");
+    assert.equal(await pM.locator("#ctxBtn").isHidden(), true, "Topics only applies to concepts");
+    let s = await mCur();
+    assert.equal(s.kind, "news");
+    const seen = [];
+    while (s.kind === "news") { seen.push(s.id); s = await mNext(); }
+    assert.equal(s.kind, "end");
+    assert.match(await s.el.locator(".q").textContent(), /caught up on markets/);
+    assert.ok(seen.length >= 1 && seen.every(id => id !== "t-old"));
+    assert.equal((await mApp()).mk.feed, "markets");
+    await pM.reload();
+    await pM.waitForFunction(() => window.__swipe && window.__swipe.mode === "chill" && window.__swipe.slides.length > 0);
+    assert.equal(await pM.locator('#feedSel [aria-checked="true"]').textContent(), "Markets");
+    await shot(pM, "market-1");
+  });
+
+  await step("a story card: hook, what happened, why it matters, IB connection, source, date and Read more", async () => {
+    const a = await mApp();
+    const i = a.slides.findIndex(x => x.id === "t-deal");
+    const el = i > -1 ? pM.locator(".slide").nth(i) : null;
+    const card = el || pM.locator(".slide").first();
+    const html = await pM.evaluate(() => { const el = window.__swipe.renderNews("t-deal"); return el.innerHTML; });
+    assert.match(html, /What happened/); assert.match(html, /Why it matters/); assert.match(html, /IB connection/);
+    assert.match(html, /Source: Test Wire/); assert.match(html, /Not final yet:/); assert.match(html, /Update, /);
+    assert.match(html, /Developing story/, "an update makes it a developing story");
+    assert.match(html, /href="https:\/\/example.com\/deal" target="_blank" rel="noopener noreferrer"/);
+    assert.match(html, /Premium.*Synergies.*Accretion\/dilution/s);
+    const rumor = await pM.evaluate(() => window.__swipe.renderNews("t-rumor").innerHTML);
+    assert.match(rumor, /Reported, not confirmed/);
+    assert.ok(card);
+  });
+
+  await step("reading a story is remembered on its own, never as study or concept progress", async () => {
+    const s = await mCur();
+    assert.equal(s.kind, "news");
+    await pM.waitForTimeout(2300);
+    const a = await mApp();
+    assert.ok(a.mk.seen[s.id], "read after a pause");
+    assert.equal(JSON.stringify(a.st), mStudy, "no reviews, mastery or bookmarks from news");
+    assert.ok(!a.ch.seen[s.id]);
+  });
+
+  await step("Related concepts opens the story's concepts as a Rabbit hole", async () => {
+    const s = await mCur();
+    const want = await pM.evaluate(id => window.__swipe.news.find(x => x.id === id).concepts, s.id);
+    await s.el.locator(".rh-news").click();
+    await pM.waitForFunction(i => window.__swipe.cur === i, s.idx + 1, { timeout: 4000 });
+    const n = await mCur();
+    assert.equal(n.kind, "chill"); assert.ok(n.rh);
+    assert.ok(want.includes(n.id), `${n.id} from ${want}`);
+  });
+
+  await step("Concepts hides stories completely", async () => {
+    await pM.locator('#feedSel [data-feed="concepts"]').click();
+    await pM.waitForFunction(() => window.__swipe.slides.length > 0);
+    for (let i = 0; i < 8; i++) await mNext();
+    assert.ok((await mApp()).slides.every(s => s.kind === "chill"));
+  });
+  await ctxM.close();
+
+  // No connection and nothing cached: Markets says so, concepts keep working.
+  const ctxO = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  await ctxO.route(/raw\.githubusercontent\.com|market\.json/, r => r.abort());
+  await ctxO.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await ctxO.addInitScript(() => localStorage.setItem("swipetechs.market.v1", JSON.stringify({ v: 1, feed: "markets", seen: {} })));
+  const pO = await ctxO.newPage(); watch(pO);
+  await pO.goto(URL);
+  await step("offline with nothing cached: Markets says stories couldn't load; Mixed falls back to concepts", async () => {
+    await pO.locator('.tab[data-mode="chill"]').click();
+    await pO.waitForFunction(() => { const s = document.querySelector(".slide .q"); return s && /couldn't load/.test(s.textContent); }, null, { timeout: 15000 });
+    await pO.locator('[data-act="feed-mixed"]').click();
+    await pO.waitForFunction(() => window.__swipe.slides.length > 1);
+    assert.ok(await pO.evaluate(() => window.__swipe.slides.every(s => s.kind === "chill")));
+  });
+  await ctxO.close();
+
   // ---------- small phone ----------
   console.log("Small phone");
-  const ctxS = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, serviceWorkers: "block" });
+  const ctxS = await newCtx({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, serviceWorkers: "block" });
   await ctxS.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const pS = await ctxS.newPage(); watch(pS);
   await pS.goto(URL);
@@ -644,7 +770,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
   // Uses a small synthetic file (tests/fixtures/private-sample.json), never real guide content.
   console.log("Private collection");
   const SAMPLE = path.join(__dirname, "fixtures", "private-sample.json");
-  const ctxP = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
+  const ctxP = await newCtx({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: "block", colorScheme: "light" });
   await ctxP.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const pP = await ctxP.newPage(); watch(pP);
   await pP.goto(URL);
@@ -882,7 +1008,7 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
 
   // ---------- migration from v1 ----------
   console.log("Migration");
-  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
+  const ctx2 = await newCtx({ viewport: { width: 390, height: 844 }, serviceWorkers: "block" });
   await ctx2.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   const v1 = { rec: { a3: { g: 3, m: 0, streak: 3, due: 50, last: "g" }, e8: { g: 0, m: 2, streak: 0, due: 7, last: "m" } }, saved: ["l5", "m4"], prefs: { topics: ["acct"], level: "all", mode: "feed" } };
   await ctx2.addInitScript(d => { if (!localStorage.getItem("swipetechs.v1")) localStorage.setItem("swipetechs.v1", d); }, JSON.stringify(v1));
@@ -902,8 +1028,9 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
 
   // ---------- desktop ----------
   console.log("Desktop");
-  const ctx3 = await browser.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: "block", colorScheme: "dark" });
+  const ctx3 = await newCtx({ viewport: { width: 1280, height: 800 }, serviceWorkers: "block", colorScheme: "dark" });
   await ctx3.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await conceptsOnly(ctx3);
   const p3 = await ctx3.newPage(); watch(p3);
   await p3.goto(URL);
   await p3.waitForFunction(() => window.__swipe && window.__swipe.slides.length > 0);
@@ -931,6 +1058,18 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     await p3.keyboard.press("b");
     assert.equal(await el.locator(".bm").getAttribute("aria-pressed"), "true");
     await shot(p3, "desktop-2-chill");
+  });
+  await step("Markets on desktop: a story card fits, Space moves on, Read more opens the source", async () => {
+    await p3.locator('#feedSel [data-feed="markets"]').click();
+    await p3.waitForFunction(() => window.__swipe.slides.length > 0 && window.__swipe.slides[0].kind === "news");
+    const r = await p3.evaluate(() => { const el = window.__swipe.slides[window.__swipe.cur].el; const sc = el.querySelector(".card-scroll"); return { w: el.querySelector(".card").getBoundingClientRect().width, over: sc.scrollHeight - sc.clientHeight, ov: document.documentElement.scrollWidth - document.documentElement.clientWidth, href: el.querySelector("a.read-more").href }; });
+    assert.ok(r.w <= 600 && r.over <= 0 && r.ov <= 0, JSON.stringify(r));
+    assert.match(r.href, /^https:\/\/example\.com\//);
+    await shot(p3, "desktop-3-markets");
+    const i0 = await p3.evaluate(() => { document.activeElement.blur(); return window.__swipe.cur; });
+    await p3.keyboard.press("Space"); await p3.waitForFunction(i => window.__swipe.cur === i + 1, i0);
+    await p3.locator('#feedSel [data-feed="concepts"]').click();
+    await p3.waitForFunction(() => window.__swipe.slides.length > 0 && window.__swipe.slides[0].kind === "chill");
   });
   await step("reduced motion: Chill cards show fully without fades", async () => {
     await p3.emulateMedia({ reducedMotion: "reduce" });

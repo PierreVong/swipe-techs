@@ -32,7 +32,7 @@
     <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.2l.4-1.2h2.6l.4 1.2a1.6 1.6 0 0 0 2.2 1l1.1-.6 1.8 1.8-.6 1.1a1.6 1.6 0 0 0 1 2.2l1.2.4v2.6l-1.2.4a1.6 1.6 0 0 0-1 2.2l.6 1.1-1.8 1.8-1.1-.6a1.6 1.6 0 0 0-2.2 1l-.4 1.2h-2.6l-.4-1.2a1.6 1.6 0 0 0-2.2-1l-1.1.6-1.8-1.8.6-1.1a1.6 1.6 0 0 0-1-2.2L2 13.3v-2.6l1.2-.4a1.6 1.6 0 0 0 1-2.2l-.6-1.1 1.8-1.8 1.1.6a1.6 1.6 0 0 0 2.2-1z"/><circle cx="12" cy="12" r="3"/></svg></button>
   </div>
 </header>
-<div class="ctx" id="ctx" hidden><span id="ctxLabel"></span><button class="ctx-btn" id="ctxBtn">Change</button></div>
+<div class="ctx" id="ctx" hidden><span id="ctxLabel"></span><div class="feedsel" id="feedSel" role="radiogroup" aria-label="What to show in Chill" hidden><button role="radio" data-feed="concepts">Concepts</button><button role="radio" data-feed="markets">Markets</button><button role="radio" data-feed="mixed">Mixed</button></div><button class="ctx-btn" id="ctxBtn">Change</button></div>
 <main class="feed" id="feed" aria-label="Question feed"></main>
 <nav class="tabs" aria-label="Study modes">
   <button class="tab" data-mode="foryou" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span>For You</span></button>
@@ -66,7 +66,7 @@
 <section class="sheet" id="chillSheet" role="dialog" aria-modal="true" aria-labelledby="chillTitle" hidden>
   <div class="grab"></div>
   <h2 id="chillTitle">🌙 Chill topics</h2>
-  <p class="note">Mixed feed shows a bit of everything. Pick topics to stay on just those.</p>
+  <p class="note">Concept cards from every topic, or just the ones you pick. Market stories aren't affected.</p>
   <h3>Show me</h3>
   <div class="chips roomy" id="chillChips"></div>
   <div class="sheet-foot topic-foot">
@@ -154,6 +154,7 @@
 
 <script src="js/srs.js"></script>
 <script src="js/chill.js"></script>
+<script src="js/market.js"></script>
 <script src="js/private.js"></script>
 <script src="data/helpers.js"></script>
 <script src="data/accounting.js"></script>
