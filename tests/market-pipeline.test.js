@@ -50,7 +50,7 @@ function fakeFetch({ gemini, completion, failAll, contact } = {}) {
     if (/company_tickers\.json/.test(url)) return json({});
     if (/data\.sec\.gov\/submissions\/CIK0000001111/.test(url)) return json({ name: "Target Co", filings: { recent: completion ? { form: ["8-K"], items: ["2.01,3.01"], filingDate: ["2026-10-12"], acceptanceDateTime: ["2026-10-12T10:00:00.000Z"], accessionNumber: ["0000000001-26-000099"], primaryDocument: ["close.htm"] } : { form: [], items: [], filingDate: [], acceptanceDateTime: [], accessionNumber: [], primaryDocument: [] } } });
     if (/close\.htm/.test(url)) return text(completion === "unrelated" ? "<p>Target Co completed its purchase of a warehouse from Acme.</p>" : "<p>Target Co completed its merger with Buyer Inc. today.</p>");
-    if (/ecb\.europa\.eu|bankofengland|globenewswire|guardianapis/.test(url)) return text("<rss></rss>");
+    if (/ecb\.europa\.eu|bankofengland|guardianapis/.test(url)) return text("<rss></rss>");
     return text("not found", 404);
   };
   fn.calls = calls;
@@ -125,7 +125,8 @@ test("with a summarizer: a grounded card is published; invented numbers and non-
   assert.equal(x.uncertain, GEMINI_GOOD.uncertain);
   assert.deepEqual(x.ciks, [1111]);
   assert.ok(x.sig >= 70, "a $8.5B deal ranks high");
-  assert.ok(fetchImpl.calls.filter(c => /sec\.gov/.test(c.url)).every(c => /test@example\.com/.test(c.opts.headers["User-Agent"])));
+  assert.ok(fetchImpl.calls.filter(c => /sec\.gov/.test(c.url)).every(c => c.opts.headers["User-Agent"] === "SwipeTechs MarketFeed test@example.com"),
+    "the plain \"Name email\" form SEC documents (a browser-style agent gets refused)");
   const sent = JSON.parse(fetchImpl.calls.find(c => /generativelanguage/.test(c.url)).opts.body).contents[0].parts[0].text;
   assert.match(sent, /Only the SOURCE|ONLY the SOURCE/);
   assert.ok(!/test@example/.test(sent) && !/"test"/.test(fetchImpl.calls.find(c => /generativelanguage/.test(c.url)).url), "key goes in a header, not the URL");

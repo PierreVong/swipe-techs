@@ -2,7 +2,8 @@
 # market-data branch (the app reads market.json from there, so the site itself never needs rebuilding).
 # Secrets/variables (Settings -> Secrets and variables -> Actions):
 #   GEMINI_API_KEY (secret)  free Google AI Studio key for the summaries; without it only fixed-wording stories go out
-#   SEC_CONTACT (variable)   an email for the User-Agent SEC requires; without it SEC filings are skipped
+#   SEC_CONTACT (secret, or variable)  an email for the User-Agent SEC and BLS require; without it SEC filings are
+#                            skipped. A secret is masked in the public run logs; a variable is printed there.
 #   GUARDIAN_API_KEY (secret, optional)  Guardian Open Platform key for wider market coverage
 name: Market Feed
 
@@ -31,11 +32,6 @@ jobs:
         with:
           node-version: 22
 
-      # TEMPORARY: diagnose the 403s from SEC, BLS and GlobeNewswire. Removed before merge.
-      - name: Probe sources
-        env:
-          SEC_CONTACT: ${{ vars.SEC_CONTACT || secrets.SEC_CONTACT }}
-        run: node tools/market/probe.mjs || true
       - name: Get the stories published last time
         run: |
           if git fetch --depth=1 origin +refs/heads/market-data:refs/remotes/origin/market-data 2>/dev/null; then
