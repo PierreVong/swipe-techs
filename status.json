@@ -1,50 +1,50 @@
 {
- "generated": "2026-10-12T13:46:59.539Z",
+ "generated": "2026-10-12T13:49:36.510Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 0,
-   "ms": 143
+   "ms": 121
   },
   "bls": {
    "ok": true,
    "items": 0,
-   "ms": 44
+   "ms": 108
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 18120
+   "ms": 17267
   },
   "edgarDeals": {
    "ok": true,
    "items": 0,
-   "ms": 1304
+   "ms": 840
   },
   "edgarIpos": {
    "ok": true,
    "items": 2,
-   "ms": 1451
+   "ms": 1654
   },
   "edgarEarnings": {
    "ok": true,
    "items": 0,
-   "ms": 7298
+   "ms": 7473
   },
   "edgarDealUpdates": {
    "ok": true,
    "items": 0,
-   "ms": 0
+   "ms": 1
   },
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 549
+   "ms": 635
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 644
+   "ms": 508
   },
   "guardian": {
    "ok": true,
@@ -52,25 +52,12 @@
    "ms": 0
   }
  },
- "written": [
-  {
-   "id": "ipo-20261009-da8dac",
-   "sig": 62,
-   "how": "gemini-flash-lite-latest",
-   "hook": "Biopharmaceutical company TRex Bio prices its initial public offering"
-  },
-  {
-   "id": "ipo-20261009-191bba",
-   "sig": 62,
-   "how": "gemini-flash-lite-latest",
-   "hook": "Retension Pharmaceuticals prices its initial public offering on Nasdaq"
-  }
- ],
+ "written": [],
  "rejected": [],
  "updates": [],
  "reverified": 0,
  "writer": "gemini",
- "live": 11,
- "total": 11,
+ "live": 9,
+ "total": 9,
  "valid": true
 }
