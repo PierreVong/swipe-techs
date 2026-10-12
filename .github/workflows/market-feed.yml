@@ -10,9 +10,6 @@ on:
   schedule:
     - cron: "23 */4 * * *"
   workflow_dispatch:
-  # TEMPORARY: one live run from the PR branch before merge. Removed before the PR is marked ready.
-  push:
-    branches: [market-feed]
 
 permissions:
   contents: write
