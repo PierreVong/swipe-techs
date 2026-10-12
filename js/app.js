@@ -35,7 +35,11 @@
   const CH = window.CHILLS;
   const CBANK = window.CB || [];
   const chillById = Object.fromEntries(CBANK.map(x => [x.id, x]));
-  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { c: x.c, t: x.t, x: x.exk, k: x.k || [], p: x.p, core: !!x.core }]));
+  // Feed metadata per card: v is the kind of picture (bar chart, bridge, side-by-side...), nx the hand-picked next steps.
+  const CHILL_NX = {};
+  (window.CHILL_BRIDGES || []).forEach(path => path.slice(1).forEach((b, i) => { (CHILL_NX[path[i]] = CHILL_NX[path[i]] || []).push(b); }));
+  const vizOf = x => { const m = /class="viz (\w+)"/.exec(x.ex || ""); return m ? m[1] : x.exk || ""; };
+  const CHILL_META = Object.fromEntries(CBANK.map(x => [x.id, { id: x.id, c: x.c, t: x.t, x: x.exk, v: vizOf(x), k: x.k || [], p: x.p, nx: CHILL_NX[x.id] || [], core: !!x.core }]));
   const CHILL_TAGS = window.CHILL_TAGS || {};
   const CHILL_IDEAS = window.CHILL_IDEAS || {}, CHILL_IV = window.CHILL_IV || {};
   const CHILL_CATS = ["acct", "ev", "val", "dcf", "ma", "lbo", "model"].filter(c => CBANK.some(x => x.c === c));
@@ -181,7 +185,7 @@
     const prev = chillSession[chillSession.length - 1];
     const s = { kind: "chill", id, first: !chillSession.length && !chillSaved, rh: q && q.rh };
     // Builds on the card before it (a short connected run), or brings back a big idea from a while ago in a new context.
-    if (!q && !chillSaved && why.why === "run") s.link = true;
+    if (!q && !chillSaved && why.why === "run") s.link = { from: prev && chillById[prev] ? chillById[prev].c : null };
     if (!q && !chillSaved && why.why === "echo") s.echo = true;
     // Now and then (a must-know idea, at most every fifth card) the card itself offers a Rabbit hole.
     if (!q && !chillSaved && !s.first && chillById[id].core && chillSession.length - chillChipAt >= 5) s.chip = true;
@@ -334,9 +338,11 @@
           <button class="like-btn" aria-pressed="${!!ch.like[x.id]}"><span aria-hidden="true">👍</span> More like this</button>
         </div>
       </div>`;
+    // A run that crosses topics names the jump where the topic goes (🔗 Accounting → LBO); within one topic it gets the badge.
+    const cross = !s.rh && s.link && s.link.from && s.link.from !== x.c && CATS[s.link.from];
     el.innerHTML = `<article class="card chill-card t-${x.t}${x.stat ? " has-stat" : ""}" style="--topic: var(--t-${x.c})" aria-label="${esc(CATS[x.c].name)} concept">
       <div class="card-head">
-        <div class="meta"><span class="cat">${esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${x.hyp ? '<span class="badge hyp">Hypothetical</span>' : ""}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
+        <div class="meta"><span class="cat">${cross ? `<span aria-hidden="true">🔗</span> ${esc(CATS[s.link.from].short || CATS[s.link.from].name)} → ${esc(CATS[x.c].short || CATS[x.c].name)}` : esc(CATS[x.c].name)}</span><span class="dot">·</span><span class="ctype"><span aria-hidden="true">${ty[0]}</span> ${ty[1]}</span>${verdict}${x.hyp ? '<span class="badge hyp">Hypothetical</span>' : ""}${s.rh ? `<button class="badge rh rh-exit" aria-label="Rabbit hole ${s.rh.i} of ${s.rh.n}. Leave the Rabbit hole">🕳️ ${s.rh.i} of ${s.rh.n} <span aria-hidden="true">✕</span></button>` : s.link && !cross ? '<span class="badge linked">🔗 Builds on the last one</span>' : seenBefore ? '<span class="badge">Seen before</span>' : ""}</div>
       </div>
       <div class="card-scroll">
         <div class="chill-body">

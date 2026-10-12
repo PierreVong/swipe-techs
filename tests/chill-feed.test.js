@@ -175,3 +175,64 @@ test("cards teaching the same big idea count as connected, for runs and the Rabb
   assert.equal(C.pick(c, ["b", "z"], { now: T0, session: ["a"], rnd: () => 0.1, meta, out }), "b");
   assert.equal(out.why, "run");
 });
+
+test("a connected run follows a hand-picked bridge into another topic when there is one", () => {
+  const meta = {
+    a: { id: "a", c: "acct", t: "concept", k: ["depreciation"], p: "tax-shields", nx: ["b"] },
+    b: { id: "b", c: "lbo", t: "scenario", k: ["leverage"], p: "claims-ladder", nx: ["d"] },
+    s: { id: "s", c: "acct", t: "example", k: ["depreciation"], p: "tax-shields" },
+    d: { id: "d", c: "dcf", t: "fact", k: ["wacc"], p: "risk-price" },
+  };
+  assert.ok(C.bridged(meta.a, meta.b) && C.linked(meta.a, meta.b), "a bridge counts as connected");
+  const out = {};
+  for (let i = 0; i < 20; i++) assert.equal(C.pick(C.blank(), ["b", "s", "d"], { now: T0, session: ["a"], rnd: () => 0.1, meta, out }), "b");
+  assert.equal(out.why, "run");
+  assert.equal(C.pick(C.blank(), ["s", "d"], { now: T0, session: ["a", "b"], rnd: () => 0.1, meta }), "d", "the bridge carries on to a third card");
+  assert.deepEqual(C.related(C.blank(), "a", ["b", "d"], meta), ["b"], "the Rabbit hole includes bridges too");
+});
+
+test("runs lean toward a related card from another topic", () => {
+  const meta = {
+    a: { id: "a", c: "acct", t: "concept", k: ["working-capital"] },
+    same: { id: "same", c: "acct", t: "example", k: ["working-capital"] },
+    other: { id: "other", c: "lbo", t: "example", k: ["working-capital"] },
+  };
+  let r = 0; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  const n = { same: 0, other: 0 };
+  for (let i = 0; i < 400; i++) {
+    const out = {}; const id = C.pick(C.blank(), ["same", "other"], { now: T0, session: ["a"], rnd, meta, out });
+    if (out.why === "run") n[id]++;
+  }
+  assert.ok(n.other > n.same * 1.5, `cross-topic picked more often (${n.other} vs ${n.same})`);
+  assert.ok(n.same > 0, "same-topic runs still happen");
+});
+
+test("once everything is seen, the feed favours rested, less-viewed cards from less-explored ideas", () => {
+  const meta = {
+    r1: { id: "r1", c: "acct", t: "concept", k: ["a"], p: "profit-not-cash" },
+    r2: { id: "r2", c: "lbo", t: "concept", k: ["b"], p: "time-value" },
+    r3: { id: "r3", c: "dcf", t: "concept", k: ["c"], p: "profit-not-cash" },
+    r4: { id: "r4", c: "ma", t: "concept", k: ["d"], p: "deal-math" },
+  };
+  const c = C.blank();
+  C.markSeen(c, "r1", T0 - 1.5 * DAY);                                   // seen yesterday: still resting
+  for (let i = 0; i < 4; i++) C.markSeen(c, "r2", T0 - 10 * DAY);        // seen four times
+  C.markSeen(c, "r3", T0 - 10 * DAY); C.markSeen(c, "r3", T0 - 10 * DAY);
+  C.markSeen(c, "r4", T0 - 10 * DAY);                                     // once, and its idea is the least explored
+  const ids = Object.keys(meta);
+  assert.equal(C.pick(c, ids, { now: T0, rnd: () => 0, meta }), "r4");
+  assert.ok(C.exposure(c, meta)["profit-not-cash"] === 3 && C.exposure(c, meta)["deal-math"] === 1);
+  const n = {};
+  for (let i = 0; i < 50; i++) { const id = C.pick(c, ids, { now: T0, rnd: Math.random, meta }); n[id] = (n[id] || 0) + 1; }
+  assert.ok(!n.r1, "a card seen yesterday waits while rested ones remain");
+  assert.equal(C.pick(c, ["r1"], { now: T0, rnd: () => 0, meta }), "r1", "but still comes back if it's the only one");
+});
+
+test("the next card avoids the same kind of picture as the last one", () => {
+  const meta = {
+    p: { id: "p", c: "acct", t: "concept", v: "bars", k: ["a"] },
+    b1: { id: "b1", c: "lbo", t: "fact", v: "bars", k: ["b"] },
+    w1: { id: "w1", c: "dcf", t: "fact", v: "wf", k: ["c"] },
+  };
+  for (let i = 0; i < 20; i++) assert.equal(C.pick(C.blank(), ["b1", "w1"], { now: T0, session: ["p"], rnd: () => 0.5 + Math.random() / 2, meta }), "w1");
+});

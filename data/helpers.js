@@ -116,5 +116,59 @@ window.CHILL_TAGS = {
   "modeling": "Model building", "circularity": "Circular references", "scenarios": "Scenarios", "taxes": "Taxes",
   "capital-structure": "Capital structure", "risk-return": "Risk & return"
 };
+/* Bridges: short hand-picked paths where one concept leads naturally into the next, usually across topics
+   (accounting -> LBO -> DCF). Now and then the feed follows one as a connected run; no ids here are required to exist
+   in a filtered selection. Each path is 2-3 card ids, in reading order. */
+window.CHILL_BRIDGES = [
+  ["xa2", "xl26", "xd10"],   // depreciation saves tax -> LBO interest cap -> after-tax cost of debt in WACC
+  ["xa16", "xd20"],          // deferred taxes -> past losses (NOLs) add value
+  ["xa6", "xa18", "xl33"],   // grocers run on suppliers' money -> growth eats cash -> cash left to repay buyout debt
+  ["xa18", "xv32"],          // growth eats working capital -> a fast-growing taco chain runs short
+  ["xd4", "xv9", "xl33"],    // free cash flow -> why capex changes multiples -> what can repay LBO debt
+  ["xe4", "xe29", "xm32"],   // EV -> a headline deal price is equity value -> cash-free, debt-free small deals
+  ["xe15", "xm11"],          // shareholders get equity value -> how takeover premiums are measured
+  ["xa10", "xa11", "xm22"],  // goodwill -> impairment costs no cash -> AOL / Time Warner write-off
+  ["xa11", "xm20"],          // a goodwill write-down costs no cash -> buyers' "cash EPS"
+  ["xl1", "xe26", "xl10"],   // LBO basics -> the club carries the Glazers' debt -> lenders, not the PE firm, take the hit
+  ["xl2", "xe31", "xd31"],   // leverage doubles a gain -> a house's equity wiped out -> a car wash's swings
+  ["xd10", "xm7", "xm8"],    // after-tax cost of debt -> debt-funded deals can lift EPS -> cash is cheapest
+  ["xd5", "xd7", "xv31"],    // terminal value dominates -> growth can't stay high forever -> slower growth, lower multiple
+  ["xd8", "xv30", "xl14"],   // rising rates hit far-off cash -> building values fall -> buyouts slow down
+  ["xa14", "xe6", "xf16"],   // stock pay isn't free -> count diluted shares -> SBC in a model
+  ["xa32", "xv26"],          // "adjusted" profit leaves out stock pay -> add-backs get multiplied in a sale
+  ["xa9", "xe30", "xm33"],   // deferred revenue -> prepaid work is debt-like in a deal -> a yoga studio's prepaid members
+  ["xa29", "xf6"],           // Starbucks gift cards -> software cash ahead of revenue
+  ["xa30", "xd21", "xv16"],  // Netflix burned cash while profitable -> growth needs reinvestment -> growth isn't always value
+  ["xa19", "xa33", "xl17"],  // repaying a loan isn't an expense -> the landscaper's cash squeeze -> the LBO cash sweep
+  ["xa23", "xl23"],          // PIK interest on the statements -> a PIK loan that grows every year
+  ["xe8", "xv24", "xe9"],    // match EV with EBITDA -> one price, three multiples -> debt changes P/E but not EV/EBITDA
+  ["xm1", "xv3", "xm13"],    // buyers pay above market -> control premium -> strategic vs PE bidder
+  ["xv7", "xd6", "xv22"],    // growth sets the multiple -> pricing cash that never stops -> earnings yield
+  ["xl16", "xm13"],          // LBO as a valuation floor -> why strategics can outbid funds
+  ["xf8", "xd28"],           // capex below depreciation -> a laundromat's real replacement cost
+  ["xa22", "xe22"],          // leases on the balance sheet -> IFRS 16 lifts EBITDA
+  ["xe12", "xe25", "xv14"],  // only excess cash comes off EV -> Berkshire's cash -> idle cash skews P/E vs EV/EBITDA
+  ["xd27", "xv30"],          // cap rate is a DCF -> the same building reprices when rates rise
+  ["xl4", "xf12", "xl5"],    // where buyout returns come from -> modeling the cash sweep -> paper LBO
+  ["xa37", "xd4"],           // $10 of depreciation through the statements -> unlevered free cash flow
+  ["xa36", "xl33"],          // a shrinking grocer hands supplier cash back -> what's left to repay buyout debt
+  ["xa39", "xe30"],          // festival tickets as deferred revenue -> a buyer treats prepaid work like debt
+  ["xa35", "xd33"],          // a big order ties up working capital -> building UFCF for a bike shop
+  ["xv7", "xd35"],           // growth sets the multiple -> an exit multiple implies a growth rate
+  ["xd36", "xm21"],          // later money is worth less -> an earnout bridges a price gap
+  ["xe32", "xm32"],          // two cafés, same EV, different asking prices -> a cash-free, debt-free sale
+  ["xa14", "xe34", "xe24"],  // stock pay isn't free -> treasury stock method -> a higher offer adds options
+  ["xa2", "xe33", "xv24"],   // depreciation -> book depreciation moves P/E, not EV/EBITDA -> one price, three multiples
+  ["xv22", "xm3"],           // P/E flipped is an earnings yield -> pricey stock buys cheaper earnings accretively
+  ["xa10", "xm35", "xm12"],  // goodwill basics -> purchase price allocation -> goodwill isn't amortized
+  ["xe24", "xm25"],          // a takeover adds diluted shares -> the exchange ratio uses them
+  ["xa5", "xf31", "xd4"],    // a sale booked, not collected -> paying later moves only cash -> FCF subtracts it
+  ["xf32", "xl17"],          // the revolver covers a bad year -> after a buyout, spare cash goes to lenders
+  ["xf11", "xf33", "xl17"],  // beginning vs average interest -> Excel's loop settles -> the LBO cash sweep behind it
+  ["xv33", "xm11"],          // precedents include a control premium -> how a premium is measured
+  ["xv35", "xl16"],          // the football field -> why the LBO bar is the floor
+  ["xe4", "xl36"],           // EV = equity + debt - cash -> a seller's owners pocket only equity value
+  ["xd4", "xl33", "xl37"]    // UFCF in a DCF -> cash that repays LBO debt -> paydown alone makes 1.75x
+];
 window.CB = [];
 window.CHILL = function (cat, cards) { cards.forEach(function (x) { x.c = cat; window.CB.push(x); }); };

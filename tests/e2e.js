@@ -574,6 +574,18 @@ const step = async (name, fn) => { await fn(); passed++; console.log("  ✓ " + 
     assert.equal(r.plain, 0, "the big idea only shows when it comes back");
   });
 
+  await step("a run that crosses topics names the jump where the topic goes; bridges point at real cards", async () => {
+    const r = await pC.evaluate(() => {
+      const lbo = window.CB.find(x => x.c === "lbo");
+      const a = window.__swipe.renderChill(lbo.id, { link: { from: "acct" } }), b = window.__swipe.renderChill(lbo.id, { link: { from: "lbo" } });
+      const ids = new Set(window.CB.map(x => x.id));
+      return { cross: a.querySelector(".cat").textContent, crossBadge: a.querySelectorAll(".badge.linked").length, same: b.querySelector(".badge.linked").textContent, bridges: window.CHILL_BRIDGES.flat().every(id => ids.has(id)) };
+    });
+    assert.equal(r.cross, "🔗 Accounting → LBO"); assert.equal(r.crossBadge, 0, "no second badge");
+    assert.equal(r.same, "🔗 Builds on the last one");
+    assert.ok(r.bridges);
+  });
+
   await step("myth cards state the claim; headline numbers show big", async () => {
     const r = await pC.evaluate(() => {
       const m = window.CB.find(x => x.t === "myth"), st = window.CB.find(x => x.stat);
