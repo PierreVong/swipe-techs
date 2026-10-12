@@ -17,6 +17,7 @@ import { makeGet } from "./lib/http.mjs";
 import { SOURCES, NEEDS_SEC } from "./lib/sources.mjs";
 import { makeWriter } from "./lib/llm.mjs";
 import { check } from "./lib/validate.mjs";
+import { dollars } from "./lib/text.mjs";
 import { loadConcepts, defaultConcepts } from "./lib/concepts.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -24,10 +25,14 @@ const MK = createRequire(import.meta.url)(path.join(ROOT, "js/market.js"));
 const DAY = 86400000;
 const MAX_NEW = 8;          // stories written per run (keeps well inside the free summarizer limits)
 const MIN_SIG = 55;         // below this a story isn't worth a card
+const MIN_IPO = 200e6;      // an IPO raising less than this isn't news an IB candidate needs
 const REVERIFY = DAY;       // re-check that each live story's source still resolves about once a day
 
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > -1 ? process.argv[i + 1] : d; };
 const readJSON = f => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (e) { return null; } };
+// Offering size of an IPO card: the largest dollar figure in What happened (its figures are already checked against
+// the filing). No stated total means it can't be shown to be big enough.
+const offering = x => Math.max(0, ...dollars(x.what));
 const hash = s => crypto.createHash("sha1").update(s).digest("hex").slice(0, 6);
 const ymd = t => new Date(t).toISOString().slice(0, 10).replace(/-/g, "");
 
@@ -98,6 +103,9 @@ export async function run({ prev, seed, now = Date.now(), env = process.env, fet
       }
     }
     if (!card) { status.rejected.push({ key: c.key, why: writer ? "summarizer unavailable" : "needs a summarizer (GEMINI_API_KEY)" }); continue; }
+    if (c.needSize && offering(card) < MIN_IPO) {
+      seen[c.key] = now; status.rejected.push({ key: c.key, why: `offering $${Math.round(offering(card) / 1e6)}M below $${MIN_IPO / 1e6}M` }); continue;
+    }
     const size = +card.size_usd_billions || 0;
     const sig = Math.round(Math.max(1, Math.min(100, c.sig + ((card.importance || 3) - 3) * 5 + (size >= 50 ? 10 : size >= 10 ? 6 : size >= 2 ? 3 : 0))));
     if (sig < MIN_SIG) { seen[c.key] = now; status.rejected.push({ key: c.key, why: `significance ${sig} below ${MIN_SIG}` }); continue; }
@@ -123,8 +131,9 @@ export async function run({ prev, seed, now = Date.now(), env = process.env, fet
     catch (e) { if (e.status === 404 || e.status === 410) x.broken = new Date(now).toISOString(); }
   }
 
-  // 5. Archive: drop stories well past their window (evergreen ones stay for a year), and old rejection memory.
+  // 5. Archive: drop stories well past their window (evergreen ones stay for a year), small IPOs, and old rejection memory.
   const keep = stories.filter(x => {
+    if (x.origin === "auto" && x.cat === "ipo" && offering(x) < MIN_IPO) return false;   // published before the size rule
     const age = now - Date.parse(x.published), p = MK.PROFILES[x.cat] || MK.PROFILES.default;
     return x.evergreen ? age < 400 * DAY : age < (p[3] + 30) * DAY;
   });

@@ -1,8 +1,8 @@
 /* Where stories come from. Every source here allows automated access (checked 2026-10-12; see README):
    Federal Reserve, BLS and Treasury (US public domain), SEC EDGAR (public; needs a contact in the User-Agent),
    ECB and Bank of England (reuse with credit; we keep only title, link, date and our own summary),
-   GlobeNewswire press releases (feeds allowed by robots.txt; we link, never copy), and optionally the Guardian
-   Open Platform (free key, non-commercial use).
+   and optionally the Guardian Open Platform (free key, non-commercial use). GlobeNewswire was dropped: its CDN
+   refuses GitHub's runners (2026-10-12); SEC filings cover the same deals and IPOs.
 
    A source returns candidates: {key, thread, cats, statuses, src:{name,url}, published, event, title, text,
    sig, parties, ciks, template?, trusted?} or updates to stories already published: {update:{match, status, text, src, t}}.
@@ -264,27 +264,6 @@ export async function boe({ get, now }) {
   return out;
 }
 
-// ---------- Company press releases ----------
-const GNW = {
-  "Mergers and Acquisitions": ["ma", "pe"], "Initial Public Offerings": ["ipo"],
-};
-const NOISE = /investigat|class action|lawsuit|shareholder alert|investor alert|law firm|securities fraud|deadline|reminds|halper|rosen|pomerantz|levi & korsinsky|kahn swick/i;
-export async function globenewswire({ get, now }) {
-  const out = [];
-  for (const [subject, cats] of Object.entries(GNW)) {
-    const url = `https://www.globenewswire.com/RssFeed/subjectcode/${subject === "Mergers and Acquisitions" ? "27" : "21"}-${encodeURIComponent(subject)}/feedTitle/${encodeURIComponent("GlobeNewswire - " + subject)}`;
-    for (const it of feedItems(await get(url)).filter(x => recent(x, now, 2))) {
-      const blob = it.title + " " + it.summary;
-      if (NOISE.test(blob) || !/billion/i.test(blob)) continue;   // only deals and offerings big enough to matter
-      let text = it.summary;
-      try { text = htmlText(await get(it.url)); } catch (e) { /* the feed summary is enough to check facts against */ }
-      out.push({ key: "gnw:" + it.url, cats, statuses: cats.includes("ipo") ? ["priced", "filed", "announced"] : ["announced", "pending", "completed", "terminated"],
-        src: { name: "GlobeNewswire", url: it.url }, published: it.published, title: it.title, text: clip(it.title + "\n" + text), sig: 64 });
-    }
-  }
-  return out;
-}
-
 // ---------- Guardian Open Platform (optional, needs GUARDIAN_API_KEY) ----------
 const MARKET_WORDS = /wall street|stocks?|shares|s&p 500|nasdaq|dow jones|ftse|bond|yields?|treasur|takeover|merger|acquisition|bid for|private equity|buyout|ipo|flotation|federal reserve|\bfed\b|interest rates?|central bank|ecb|bank of england/i;
 export async function guardian({ get, now, env }) {
@@ -297,5 +276,5 @@ export async function guardian({ get, now, env }) {
   }));
 }
 
-export const SOURCES = { fed, bls, treasury, edgarDeals, edgarIpos, edgarEarnings, edgarDealUpdates, ecb, boe, globenewswire, guardian };
+export const SOURCES = { fed, bls, treasury, edgarDeals, edgarIpos, edgarEarnings, edgarDealUpdates, ecb, boe, guardian };
 export const NEEDS_SEC = new Set(["edgarDeals", "edgarIpos", "edgarEarnings", "edgarDealUpdates"]);

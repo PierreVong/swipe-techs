@@ -88,6 +88,16 @@ export function unsupported(claim, source) {
   const ok = v => have.some(h => [1, 1e3, 1e6, 1e9, 1e-3, 1e-6, 1e-9, 100, 1e-2].some(f => close(h, v * f)));
   return [...new Set(numbers(claim))].filter(v => !ok(v));
 }
+// Dollar amounts in a sentence, in dollars: "$45,000,000" -> 45e6, "$1.6 billion" -> 1.6e9, "$14.00 per share" -> 14.
+export function dollars(s) {
+  const out = [], re = /\$\s?(\d[\d,]*(?:\.\d+)?)\s*(billion|bn|million|mn|m\b)?/gi;
+  let m;
+  while ((m = re.exec(String(s || "")))) {
+    const unit = (m[2] || "").toLowerCase();
+    out.push(+m[1].replace(/,/g, "") * (unit === "billion" || unit === "bn" ? 1e9 : unit ? 1e6 : 1));
+  }
+  return out;
+}
 // True when `quote` appears in the source (ignoring case, curly quotes and spacing).
 export const quoted = (quote, source) => { const q = squash(quote); return q.length >= 12 && squash(source).includes(q); };
 

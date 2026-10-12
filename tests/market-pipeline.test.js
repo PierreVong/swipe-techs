@@ -50,7 +50,7 @@ function fakeFetch({ gemini, completion, failAll, contact } = {}) {
     if (/company_tickers\.json/.test(url)) return json({});
     if (/data\.sec\.gov\/submissions\/CIK0000001111/.test(url)) return json({ name: "Target Co", filings: { recent: completion ? { form: ["8-K"], items: ["2.01,3.01"], filingDate: ["2026-10-12"], acceptanceDateTime: ["2026-10-12T10:00:00.000Z"], accessionNumber: ["0000000001-26-000099"], primaryDocument: ["close.htm"] } : { form: [], items: [], filingDate: [], acceptanceDateTime: [], accessionNumber: [], primaryDocument: [] } } });
     if (/close\.htm/.test(url)) return text(completion === "unrelated" ? "<p>Target Co completed its purchase of a warehouse from Acme.</p>" : "<p>Target Co completed its merger with Buyer Inc. today.</p>");
-    if (/ecb\.europa\.eu|bankofengland|globenewswire|guardianapis/.test(url)) return text("<rss></rss>");
+    if (/ecb\.europa\.eu|bankofengland|guardianapis/.test(url)) return text("<rss></rss>");
     return text("not found", 404);
   };
   fn.calls = calls;
@@ -60,6 +60,8 @@ const quiet = () => {};
 
 // ---------- helpers ----------
 test("feeds, numbers and quotes parse the way the checks rely on", async () => {
+  const { dollars } = await import("../tools/market/lib/text.mjs");
+  assert.deepEqual(dollars("8,333,334 shares at $14.00 per share, raising $116,666,676; up to $1.6 billion or $250 million"), [14, 116666676, 1.6e9, 250e6]);
   const [, T] = await load();
   const items = T.feedItems(FED_RSS);
   assert.equal(items.length, 2);
@@ -125,7 +127,8 @@ test("with a summarizer: a grounded card is published; invented numbers and non-
   assert.equal(x.uncertain, GEMINI_GOOD.uncertain);
   assert.deepEqual(x.ciks, [1111]);
   assert.ok(x.sig >= 70, "a $8.5B deal ranks high");
-  assert.ok(fetchImpl.calls.filter(c => /sec\.gov/.test(c.url)).every(c => /test@example\.com/.test(c.opts.headers["User-Agent"])));
+  assert.ok(fetchImpl.calls.filter(c => /sec\.gov/.test(c.url)).every(c => c.opts.headers["User-Agent"] === "SwipeTechs MarketFeed test@example.com"),
+    "the plain \"Name email\" form SEC documents (a browser-style agent gets refused)");
   const sent = JSON.parse(fetchImpl.calls.find(c => /generativelanguage/.test(c.url)).opts.body).contents[0].parts[0].text;
   assert.match(sent, /Only the SOURCE|ONLY the SOURCE/);
   assert.ok(!/test@example/.test(sent) && !/"test"/.test(fetchImpl.calls.find(c => /generativelanguage/.test(c.url)).url), "key goes in a header, not the URL");
@@ -180,7 +183,12 @@ test("archive: stories past their window drop out; evergreen ones stay for a yea
     { ...base, id: "old", published: "2026-07-01T00:00:00Z" },
     { ...base, id: "keep", cat: "fed", evergreen: true, published: "2026-03-01T00:00:00Z" },
     { ...base, id: "new", published: "2026-10-11T00:00:00Z" },
+    // IPOs: only offerings of $200M or more are worth a card (the size comes from What happened, already checked).
+    { ...base, id: "ipo-small", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X priced 3,750,000 shares at $12.00 per share, raising $45,000,000." },
+    { ...base, id: "ipo-nosize", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X priced its IPO at $18.00 per share." },
+    { ...base, id: "ipo-big", cat: "ipo", status: "priced", origin: "auto", published: "2026-10-11T00:00:00Z", what: "X raised $1.2 billion selling 40 million shares at $30 each." },
+    { ...base, id: "ipo-manual", cat: "ipo", status: "priced", origin: "manual", published: "2026-10-11T00:00:00Z", what: "Hand-checked." },
   ] };
   const { data } = await run({ prev, now: NOW, env: {}, fetchImpl: fakeFetch({ failAll: true }), log: quiet, retryMs: 0 });
-  assert.deepEqual(data.stories.map(x => x.id).sort(), ["keep", "new"]);
+  assert.deepEqual(data.stories.map(x => x.id).sort(), ["ipo-big", "ipo-manual", "keep", "new"]);
 });
