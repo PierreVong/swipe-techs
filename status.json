@@ -1,55 +1,55 @@
 {
- "generated": "2026-10-18T04:47:15.352Z",
+ "generated": "2026-10-18T12:40:11.098Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 0,
-   "ms": 116
+   "ms": 106
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 37
+   "ms": 189
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 19206
+   "ms": 17175
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 38
+   "ms": 70
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 225
+   "ms": 202
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 40
+   "ms": 84
   },
   "edgarDealUpdates": {
    "ok": true,
    "items": 0,
-   "ms": 1
+   "ms": 0
   },
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 493
+   "ms": 584
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 249
+   "ms": 611
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 51
+   "ms": 59
   },
   "guardian": {
    "ok": true,
