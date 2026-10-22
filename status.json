@@ -1,55 +1,55 @@
 {
- "generated": "2026-10-22T20:12:58.404Z",
+ "generated": "2026-10-22T23:27:45.954Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 0,
-   "ms": 267
+   "ms": 136
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 163
+   "ms": 126
   },
   "treasury": {
    "ok": true,
    "items": 1,
-   "ms": 19183
+   "ms": 19311
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 169
+   "ms": 91
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 156
+   "ms": 179
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 39
+   "ms": 132
   },
   "edgarDealUpdates": {
    "ok": true,
    "items": 0,
-   "ms": 0
+   "ms": 1
   },
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 330
+   "ms": 633
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 141
+   "ms": 614
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 49
+   "ms": 121
   },
   "guardian": {
    "ok": true,
@@ -58,14 +58,9 @@
   }
  },
  "written": [],
- "rejected": [
-  {
-   "key": "ust10:2026-10-22",
-   "why": "not significant: This is routine daily Treasury yield curve data rather than significant corporate finance or deal news for investment ba"
-  }
- ],
+ "rejected": [],
  "updates": [],
- "reverified": 3,
+ "reverified": 0,
  "writer": "gemini",
  "live": 9,
  "total": 9,
