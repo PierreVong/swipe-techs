@@ -1,7 +1,44 @@
 {
  "v": 1,
- "generated": "2026-10-28T05:56:31.509Z",
+ "generated": "2026-10-28T21:11:50.646Z",
  "stories": [
+  {
+   "id": "fed-20261028-652598",
+   "key": "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+   "cat": "fed",
+   "status": "decision",
+   "sig": 100,
+   "hook": "Fed leaves benchmark rate unchanged at 3-3/4 to 4 percent",
+   "what": "The Federal Reserve maintained its benchmark rate at 3-3/4 to 4 percent in a 10-2 vote, with two members dissenting.",
+   "why": "Steady policy rates stabilize borrowing conditions while officials assess persistent inflation and economic momentum.",
+   "ib": "The federal funds rate anchors the risk-free rate, directly shaping corporate cost of debt and WACC in DCFs.",
+   "chain": [
+    "Rate hold",
+    "Risk-free rate",
+    "Cost of debt",
+    "WACC"
+   ],
+   "ctx": "Central bank rate decisions determine the baseline cost of capital across credit markets and corporate valuation models.",
+   "concepts": [
+    "xd8",
+    "xd9"
+   ],
+   "src": {
+    "name": "Federal Reserve",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm"
+   },
+   "published": "2026-10-28T18:00:00.000Z",
+   "event": null,
+   "verified": "2026-10-28T21:11:50.646Z",
+   "thread": "fomc",
+   "origin": "auto",
+   "writer": "gemini-flash-latest",
+   "updates": [],
+   "parties": [
+    "Federal Reserve",
+    "Federal Open Market Committee"
+   ]
+  },
   {
    "id": "credit-20261009-ust10",
    "cat": "credit",
@@ -328,6 +365,7 @@
   }
  ],
  "seenKeys": {
-  "ust10:2026-10-22": 1792699978404
+  "ust10:2026-10-22": 1792699978404,
+  "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm": 1793221910646
  }
 }
