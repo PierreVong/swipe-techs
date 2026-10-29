@@ -1,35 +1,35 @@
 {
- "generated": "2026-10-29T06:01:52.600Z",
+ "generated": "2026-10-29T15:18:32.083Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 1,
-   "ms": 248
+   "ms": 228
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 165
+   "ms": 154
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 18324
+   "ms": 19299
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 160
+   "ms": 127
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 122
+   "ms": 149
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 152
+   "ms": 118
   },
   "edgarDealUpdates": {
    "ok": true,
@@ -38,18 +38,18 @@
   },
   "ecb": {
    "ok": true,
-   "items": 0,
-   "ms": 641
+   "items": 1,
+   "ms": 998
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 372
+   "ms": 410
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 100
+   "ms": 151
   },
   "guardian": {
    "ok": true,
@@ -57,12 +57,19 @@
    "ms": 0
   }
  },
- "written": [],
+ "written": [
+  {
+   "id": "intl-20261029-8b12a7",
+   "sig": 77,
+   "how": "gemini-flash-latest",
+   "hook": "ECB holds interest rates steady amid energy price shock"
+  }
+ ],
  "rejected": [],
  "updates": [],
- "reverified": 3,
+ "reverified": 0,
  "writer": "gemini",
- "live": 10,
- "total": 10,
+ "live": 11,
+ "total": 11,
  "valid": true
 }

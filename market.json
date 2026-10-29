@@ -1,7 +1,44 @@
 {
  "v": 1,
- "generated": "2026-10-29T06:01:52.600Z",
+ "generated": "2026-10-29T15:18:32.083Z",
  "stories": [
+  {
+   "id": "intl-20261029-8b12a7",
+   "key": "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html",
+   "cat": "intl",
+   "status": "decision",
+   "sig": 77,
+   "hook": "ECB holds interest rates steady amid energy price shock",
+   "what": "The ECB kept interest rates unchanged, holding the deposit facility, main refinancing, and marginal lending rates at 2.50%, 2.65%, and 2.90%.",
+   "why": "Holding rates balances upside inflation risks from energy shocks against downside risks to economic growth.",
+   "ib": "Benchmark policy rates determine base borrowing yields, directly establishing the cost of debt in European DCF models.",
+   "chain": [
+    "Policy rate",
+    "Risk-free rate",
+    "Cost of debt",
+    "WACC"
+   ],
+   "ctx": "Central banks pause rate changes when energy supply shocks create conflicting risks for inflation and growth.",
+   "concepts": [
+    "xd24",
+    "xd8"
+   ],
+   "src": {
+    "name": "European Central Bank",
+    "url": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html"
+   },
+   "published": "2026-10-29T13:15:00.000Z",
+   "event": null,
+   "verified": "2026-10-29T15:18:32.083Z",
+   "thread": "ecb",
+   "origin": "auto",
+   "writer": "gemini-flash-latest",
+   "updates": [],
+   "parties": [
+    "European Central Bank",
+    "Governing Council"
+   ]
+  },
   {
    "id": "fed-20261028-652598",
    "key": "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
@@ -366,6 +403,7 @@
  ],
  "seenKeys": {
   "ust10:2026-10-22": 1792699978404,
-  "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm": 1793221910646
+  "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm": 1793221910646,
+  "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html": 1793287112083
  }
 }
