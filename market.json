@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-10-29T15:18:32.083Z",
+ "generated": "2026-10-29T21:14:55.988Z",
  "stories": [
   {
    "id": "intl-20261029-8b12a7",
@@ -66,7 +66,7 @@
    },
    "published": "2026-10-28T18:00:00.000Z",
    "event": null,
-   "verified": "2026-10-28T21:11:50.646Z",
+   "verified": "2026-10-29T21:14:55.988Z",
    "thread": "fomc",
    "origin": "auto",
    "writer": "gemini-flash-latest",
