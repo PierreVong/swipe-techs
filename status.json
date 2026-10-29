@@ -1,35 +1,35 @@
 {
- "generated": "2026-10-28T21:11:50.646Z",
+ "generated": "2026-10-29T06:01:52.600Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 1,
-   "ms": 440
+   "ms": 248
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 136
+   "ms": 165
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 17266
+   "ms": 18324
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 84
+   "ms": 160
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 189
+   "ms": 122
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 109
+   "ms": 152
   },
   "edgarDealUpdates": {
    "ok": true,
@@ -39,12 +39,12 @@
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 698
+   "ms": 641
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 693
+   "ms": 372
   },
   "globenewswire": {
    "ok": false,
@@ -57,17 +57,10 @@
    "ms": 0
   }
  },
- "written": [
-  {
-   "id": "fed-20261028-652598",
-   "sig": 100,
-   "how": "gemini-flash-latest",
-   "hook": "Fed leaves benchmark rate unchanged at 3-3/4 to 4 percent"
-  }
- ],
+ "written": [],
  "rejected": [],
  "updates": [],
- "reverified": 0,
+ "reverified": 3,
  "writer": "gemini",
  "live": 10,
  "total": 10,
