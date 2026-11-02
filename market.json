@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-11-01T15:18:21.578Z",
+ "generated": "2026-11-02T06:28:01.337Z",
  "stories": [
   {
    "id": "intl-20261029-8b12a7",
@@ -29,7 +29,7 @@
    },
    "published": "2026-10-29T13:15:00.000Z",
    "event": null,
-   "verified": "2026-10-31T23:28:41.112Z",
+   "verified": "2026-11-02T06:28:01.337Z",
    "thread": "ecb",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -66,7 +66,7 @@
    },
    "published": "2026-10-28T18:00:00.000Z",
    "event": null,
-   "verified": "2026-11-01T06:26:35.676Z",
+   "verified": "2026-11-02T06:28:01.337Z",
    "thread": "fomc",
    "origin": "auto",
    "writer": "gemini-flash-latest",
