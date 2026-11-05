@@ -1,7 +1,44 @@
 {
  "v": 1,
- "generated": "2026-11-04T19:55:16.214Z",
+ "generated": "2026-11-05T12:33:05.994Z",
  "stories": [
+  {
+   "id": "intl-20261105-96b6fd",
+   "key": "boe:https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026",
+   "cat": "intl",
+   "status": "decision",
+   "sig": 73,
+   "hook": "Bank of England raises Bank Rate to 4% on energy costs",
+   "what": "The Bank of England's Monetary Policy Committee voted 8–1 to increase Bank Rate by 0.25 percentage points to 4%.",
+   "why": "Higher rates curb energy-driven inflation risks but increase borrowing costs across the broader economy.",
+   "ib": "Higher risk-free rates lift the cost of debt, raising WACC and compressing target DCF valuation multiples.",
+   "chain": [
+    "Rate hike",
+    "Cost of debt",
+    "Higher WACC",
+    "Lower DCF value"
+   ],
+   "ctx": "Central banks raise policy rates during supply shocks to keep medium-term inflation expectations anchored.",
+   "concepts": [
+    "xd8",
+    "xd9"
+   ],
+   "src": {
+    "name": "Bank of England",
+    "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026"
+   },
+   "published": "2026-11-05T12:00:00.000Z",
+   "event": null,
+   "verified": "2026-11-05T12:33:05.994Z",
+   "thread": "boe",
+   "origin": "auto",
+   "writer": "gemini-flash-latest",
+   "updates": [],
+   "parties": [
+    "Bank of England",
+    "Monetary Policy Committee"
+   ]
+  },
   {
    "id": "intl-20261029-8b12a7",
    "key": "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html",
@@ -29,7 +66,7 @@
    },
    "published": "2026-10-29T13:15:00.000Z",
    "event": null,
-   "verified": "2026-11-04T12:19:18.760Z",
+   "verified": "2026-11-05T12:33:05.994Z",
    "thread": "ecb",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -66,7 +103,7 @@
    },
    "published": "2026-10-28T18:00:00.000Z",
    "event": null,
-   "verified": "2026-11-04T12:19:18.760Z",
+   "verified": "2026-11-05T12:33:05.994Z",
    "thread": "fomc",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -404,6 +441,7 @@
  "seenKeys": {
   "ust10:2026-10-22": 1792699978404,
   "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm": 1793221910646,
-  "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html": 1793287112083
+  "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html": 1793287112083,
+  "boe:https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026": 1793881985994
  }
 }

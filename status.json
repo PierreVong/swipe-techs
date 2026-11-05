@@ -1,55 +1,55 @@
 {
- "generated": "2026-11-05T00:56:50.413Z",
+ "generated": "2026-11-05T12:33:05.994Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 0,
-   "ms": 299
+   "ms": 174
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 181
+   "ms": 201
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 18378
+   "ms": 16538
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 159
+   "ms": 261
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 128
+   "ms": 91
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 290
+   "ms": 110
   },
   "edgarDealUpdates": {
    "ok": true,
    "items": 0,
-   "ms": 0
+   "ms": 1
   },
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 562
+   "ms": 434
   },
   "boe": {
    "ok": true,
-   "items": 0,
-   "ms": 398
+   "items": 1,
+   "ms": 474
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 224
+   "ms": 132
   },
   "guardian": {
    "ok": true,
@@ -57,12 +57,19 @@
    "ms": 0
   }
  },
- "written": [],
+ "written": [
+  {
+   "id": "intl-20261105-96b6fd",
+   "sig": 73,
+   "how": "gemini-flash-latest",
+   "hook": "Bank of England raises Bank Rate to 4% on energy costs"
+  }
+ ],
  "rejected": [],
  "updates": [],
- "reverified": 0,
+ "reverified": 2,
  "writer": "gemini",
- "live": 9,
- "total": 11,
+ "live": 10,
+ "total": 12,
  "valid": true
 }
