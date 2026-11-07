@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-11-07T06:14:31.893Z",
+ "generated": "2026-11-07T20:19:45.195Z",
  "stories": [
   {
    "id": "intl-20261105-96b6fd",
@@ -29,7 +29,7 @@
    },
    "published": "2026-11-05T12:00:00.000Z",
    "event": null,
-   "verified": "2026-11-06T16:00:23.738Z",
+   "verified": "2026-11-07T20:19:45.195Z",
    "thread": "boe",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -66,7 +66,7 @@
    },
    "published": "2026-10-29T13:15:00.000Z",
    "event": null,
-   "verified": "2026-11-06T16:00:23.738Z",
+   "verified": "2026-11-07T20:19:45.195Z",
    "thread": "ecb",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -103,7 +103,7 @@
    },
    "published": "2026-10-28T18:00:00.000Z",
    "event": null,
-   "verified": "2026-11-06T16:00:23.738Z",
+   "verified": "2026-11-07T20:19:45.195Z",
    "thread": "fomc",
    "origin": "auto",
    "writer": "gemini-flash-latest",
