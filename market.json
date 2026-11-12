@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-11-12T07:26:02.445Z",
+ "generated": "2026-11-12T16:54:05.132Z",
  "stories": [
   {
    "id": "intl-20261105-96b6fd",
@@ -216,7 +216,7 @@
    },
    "published": "2026-10-05T12:00:00Z",
    "event": "2026-10-05T12:00:00Z",
-   "verified": "2026-11-11T16:21:11.656Z",
+   "verified": "2026-11-12T16:54:05.132Z",
    "updates": []
   },
   {
@@ -253,7 +253,7 @@
    },
    "published": "2026-10-05T06:00:00Z",
    "event": "2026-10-05T06:00:00Z",
-   "verified": "2026-11-11T16:21:11.656Z",
+   "verified": "2026-11-12T16:54:05.132Z",
    "updates": []
   },
   {
@@ -425,7 +425,7 @@
    },
    "published": "2026-09-16T18:00:00Z",
    "event": "2026-09-16T18:00:00Z",
-   "verified": "2026-11-11T16:21:11.656Z",
+   "verified": "2026-11-12T16:54:05.132Z",
    "updates": [
     {
      "t": "2026-10-07T18:00:00Z",
@@ -439,7 +439,6 @@
   }
  ],
  "seenKeys": {
-  "ecb:https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html": 1793287112083,
   "boe:https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026": 1793881985994
  }
 }
