@@ -1,35 +1,35 @@
 {
- "generated": "2026-11-12T16:54:05.132Z",
+ "generated": "2026-11-13T01:13:26.411Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 0,
-   "ms": 117
+   "ms": 138
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 82
+   "ms": 115
   },
   "treasury": {
    "ok": true,
-   "items": 0,
-   "ms": 17236
+   "items": 1,
+   "ms": 18544
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 140
+   "ms": 64
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 128
+   "ms": 221
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 220
+   "ms": 156
   },
   "edgarDealUpdates": {
    "ok": true,
@@ -39,28 +39,33 @@
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 341
+   "ms": 790
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 353
+   "ms": 486
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 41
+   "ms": 117
   },
   "guardian": {
    "ok": true,
    "items": 0,
-   "ms": 1
+   "ms": 0
   }
  },
  "written": [],
- "rejected": [],
+ "rejected": [
+  {
+   "key": "ust10:2026-11-12",
+   "why": "not significant: This is routine daily macroeconomic data on government bond yields, not significant corporate finance or deal news for i"
+  }
+ ],
  "updates": [],
- "reverified": 3,
+ "reverified": 0,
  "writer": "gemini",
  "live": 9,
  "total": 12,
