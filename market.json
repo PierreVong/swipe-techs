@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-11-18T17:21:58.973Z",
+ "generated": "2026-11-19T01:55:04.796Z",
  "stories": [
   {
    "id": "intl-20261105-96b6fd",
@@ -29,7 +29,7 @@
    },
    "published": "2026-11-05T12:00:00.000Z",
    "event": null,
-   "verified": "2026-11-17T23:34:11.394Z",
+   "verified": "2026-11-19T01:55:04.796Z",
    "thread": "boe",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -66,7 +66,7 @@
    },
    "published": "2026-10-29T13:15:00.000Z",
    "event": null,
-   "verified": "2026-11-17T23:34:11.394Z",
+   "verified": "2026-11-19T01:55:04.796Z",
    "thread": "ecb",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -103,7 +103,7 @@
    },
    "published": "2026-10-28T18:00:00.000Z",
    "event": null,
-   "verified": "2026-11-17T23:34:11.394Z",
+   "verified": "2026-11-19T01:55:04.796Z",
    "thread": "fomc",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -441,6 +441,7 @@
  "seenKeys": {
   "boe:https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026": 1793881985994,
   "ust10:2026-11-12": 1794532406411,
-  "ust10:2026-11-13": 1794607324953
+  "ust10:2026-11-13": 1794607324953,
+  "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261118a.htm": 1795053304796
  }
 }
