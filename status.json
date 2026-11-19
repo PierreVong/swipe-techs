@@ -1,35 +1,35 @@
 {
- "generated": "2026-11-19T01:55:04.796Z",
+ "generated": "2026-11-19T13:33:06.763Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 1,
-   "ms": 183
+   "ms": 247
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 404
+   "ms": 261
   },
   "treasury": {
    "ok": true,
    "items": 0,
-   "ms": 18362
+   "ms": 18378
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 36
+   "ms": 91
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 256
+   "ms": 169
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 54
+   "ms": 112
   },
   "edgarDealUpdates": {
    "ok": true,
@@ -39,33 +39,28 @@
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 452
+   "ms": 701
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 387
+   "ms": 478
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 174
+   "ms": 111
   },
   "guardian": {
    "ok": true,
    "items": 0,
-   "ms": 0
+   "ms": 1
   }
  },
  "written": [],
- "rejected": [
-  {
-   "key": "fed:https://www.federalreserve.gov/newsevents/pressreleases/monetary20261118a.htm",
-   "why": "not significant: The source only announces the routine publication of historical FOMC meeting minutes without detailing any actual policy"
-  }
- ],
+ "rejected": [],
  "updates": [],
- "reverified": 3,
+ "reverified": 0,
  "writer": "gemini",
  "live": 8,
  "total": 12,
