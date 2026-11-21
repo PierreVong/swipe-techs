@@ -1,55 +1,55 @@
 {
- "generated": "2026-11-20T17:02:08.093Z",
+ "generated": "2026-11-21T01:36:09.577Z",
  "sources": {
   "fed": {
    "ok": true,
    "items": 1,
-   "ms": 336
+   "ms": 134
   },
   "bls": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 231
+   "ms": 120
   },
   "treasury": {
    "ok": true,
-   "items": 0,
-   "ms": 19416
+   "items": 1,
+   "ms": 18207
   },
   "edgarDeals": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 175
+   "ms": 48
   },
   "edgarIpos": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 124
+   "ms": 213
   },
   "edgarEarnings": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 184
+   "ms": 54
   },
   "edgarDealUpdates": {
    "ok": true,
    "items": 0,
-   "ms": 1
+   "ms": 0
   },
   "ecb": {
    "ok": true,
    "items": 0,
-   "ms": 684
+   "ms": 419
   },
   "boe": {
    "ok": true,
    "items": 0,
-   "ms": 390
+   "ms": 325
   },
   "globenewswire": {
    "ok": false,
    "error": "HTTP 403",
-   "ms": 94
+   "ms": 73
   },
   "guardian": {
    "ok": true,
@@ -58,9 +58,14 @@
   }
  },
  "written": [],
- "rejected": [],
+ "rejected": [
+  {
+   "key": "ust10:2026-11-20",
+   "why": "not significant: Routine daily Treasury par yield curve data table without policy decisions or wider context."
+  }
+ ],
  "updates": [],
- "reverified": 0,
+ "reverified": 3,
  "writer": "gemini",
  "live": 7,
  "total": 12,
