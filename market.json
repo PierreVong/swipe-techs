@@ -1,6 +1,6 @@
 {
  "v": 1,
- "generated": "2026-11-27T00:40:50.727Z",
+ "generated": "2026-11-28T08:06:19.142Z",
  "stories": [
   {
    "id": "intl-20261105-96b6fd",
@@ -29,7 +29,7 @@
    },
    "published": "2026-11-05T12:00:00.000Z",
    "event": null,
-   "verified": "2026-11-27T00:40:50.727Z",
+   "verified": "2026-11-28T08:06:19.142Z",
    "thread": "boe",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -66,7 +66,7 @@
    },
    "published": "2026-10-29T13:15:00.000Z",
    "event": null,
-   "verified": "2026-11-27T00:40:50.727Z",
+   "verified": "2026-11-28T08:06:19.142Z",
    "thread": "ecb",
    "origin": "auto",
    "writer": "gemini-flash-latest",
@@ -216,7 +216,7 @@
    },
    "published": "2026-10-05T12:00:00Z",
    "event": "2026-10-05T12:00:00Z",
-   "verified": "2026-11-27T00:40:50.727Z",
+   "verified": "2026-11-28T08:06:19.142Z",
    "updates": []
   },
   {
@@ -253,7 +253,7 @@
    },
    "published": "2026-10-05T06:00:00Z",
    "event": "2026-10-05T06:00:00Z",
-   "verified": "2026-11-27T00:40:50.727Z",
+   "verified": "2026-11-28T08:06:19.142Z",
    "updates": []
   },
   {
@@ -425,7 +425,7 @@
    },
    "published": "2026-09-16T18:00:00Z",
    "event": "2026-09-16T18:00:00Z",
-   "verified": "2026-11-27T00:40:50.727Z",
+   "verified": "2026-11-28T08:06:19.142Z",
    "updates": [
     {
      "t": "2026-10-07T18:00:00Z",
